@@ -1021,7 +1021,7 @@ Report:"""
 """
 
         saved_md = self.save_report(f"pipeline_{target}", full_report)
-        save_msg = f"Report saved to Desktop." if saved_md else "Could not save report."
+        save_msg = f"Report saved: {saved_md}" if saved_md else "Could not save report."
 
         # Voice summary
         nmap_voice = _parse_nmap_voice(sections["nmap"], target)
@@ -1337,7 +1337,7 @@ Report:"""
             f"({crit} critical, {high} high) after the quality gate filtered "
             f"{filtered} noise/unconfirmed item{'s' if filtered != 1 else ''}. "
             f"{len(exploits_map)} with known exploits. "
-            f"{'Report saved to Desktop.' if saved else 'Report generation failed.'}"
+            f"{('Report saved: ' + saved) if saved else 'Report generation failed.'}"
         )
 
         return {
@@ -1470,7 +1470,7 @@ Report:"""
 """
 
         saved_path = self.save_report(target, full_report)
-        save_msg = f"Report saved: ultron_{target.replace('.', '_')}..." if saved_path else "Could not save report."
+        save_msg = f"Report saved: {saved_path}" if saved_path else "Could not save report."
 
         prefix = "" if reachable else "[INCONCLUSIVE - target unreachable] "
         summary = prefix + (analysis or sections["nmap"])[:400] + "..."
