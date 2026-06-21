@@ -1,0 +1,5788 @@
+{
+  "schema_version": "0.1.0",
+  "generated_at": "2026-04-23T17:14:43+00:00",
+  "source_path": "C:\\Users\\User\\hackingtool",
+  "tool_count": 183,
+  "tools": [
+    {
+      "id": "active_directory.BloodHound",
+      "class_name": "BloodHound",
+      "category": "active_directory",
+      "title": "BloodHound (AD Attack Paths)",
+      "description": "Uses graph theory to reveal hidden attack paths in Active Directory/Azure environments.",
+      "project_url": "https://github.com/BloodHoundAD/BloodHound",
+      "install_commands": [
+        "pip install --user bloodhound",
+        "sudo apt-get install -y neo4j"
+      ],
+      "run_commands": [
+        "bloodhound-python --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "active_directory.NetExec",
+      "class_name": "NetExec",
+      "category": "active_directory",
+      "title": "NetExec — nxc (Network Pentesting)",
+      "description": "Swiss army knife for pentesting Windows/AD networks. Successor to CrackMapExec.",
+      "project_url": "https://github.com/Pennyw0rth/NetExec",
+      "install_commands": [
+        "pip install --user netexec"
+      ],
+      "run_commands": [
+        "nxc --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "active_directory.Impacket",
+      "class_name": "Impacket",
+      "category": "active_directory",
+      "title": "Impacket (Network Protocol Tools)",
+      "description": "Python classes for working with SMB, MSRPC, Kerberos, LDAP, and more.",
+      "project_url": "https://github.com/fortra/impacket",
+      "install_commands": [
+        "pip install --user impacket"
+      ],
+      "run_commands": [
+        "impacket-smbclient --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "active_directory.Responder",
+      "class_name": "Responder",
+      "category": "active_directory",
+      "title": "Responder (LLMNR/NBT-NS Poisoner)",
+      "description": "LLMNR/NBT-NS/MDNS poisoner with rogue authentication servers for credential capture.",
+      "project_url": "https://github.com/lgandx/Responder",
+      "install_commands": [
+        "git clone https://github.com/lgandx/Responder.git"
+      ],
+      "run_commands": [
+        "cd Responder && sudo python3 Responder.py --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "active_directory.Certipy",
+      "class_name": "Certipy",
+      "category": "active_directory",
+      "title": "Certipy (AD Certificate Abuse)",
+      "description": "Active Directory Certificate Services enumeration and abuse tool.",
+      "project_url": "https://github.com/ly4k/Certipy",
+      "install_commands": [
+        "pip install --user certipy-ad"
+      ],
+      "run_commands": [
+        "certipy --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "active_directory.Kerbrute",
+      "class_name": "Kerbrute",
+      "category": "active_directory",
+      "title": "Kerbrute (Kerberos Brute Force)",
+      "description": "Kerberos pre-auth brute-forcer for username enumeration and password spraying.",
+      "project_url": "https://github.com/ropnop/kerbrute",
+      "install_commands": [
+        "go install github.com/ropnop/kerbrute@latest"
+      ],
+      "run_commands": [
+        "kerbrute --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "anonsurf.AnonymouslySurf",
+      "class_name": "AnonymouslySurf",
+      "category": "anonsurf",
+      "title": "Anonymously Surf",
+      "description": "It automatically overwrites the RAM when the system shuts down\nand also changes your IP address.",
+      "project_url": "https://github.com/Und3rf10w/kali-anonsurf",
+      "install_commands": [
+        "git clone https://github.com/Und3rf10w/kali-anonsurf.git",
+        "cd kali-anonsurf && sudo ./installer.sh"
+      ],
+      "run_commands": [
+        "sudo anonsurf start"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "anonsurf.Multitor",
+      "class_name": "Multitor",
+      "category": "anonsurf",
+      "title": "Multitor",
+      "description": "How to stay in multi places at the same time.",
+      "project_url": "https://github.com/trimstray/multitor",
+      "install_commands": [
+        "git clone https://github.com/trimstray/multitor.git",
+        "cd multitor && sudo bash setup.sh install"
+      ],
+      "run_commands": [
+        "multitor --init 2 --user debian-tor --socks-port 9000 --control-port 9900 --proxy privoxy --haproxy"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": false,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "cloud_security.Prowler",
+      "class_name": "Prowler",
+      "category": "cloud_security",
+      "title": "Prowler (Cloud Security Scanner)",
+      "description": "Open-source security tool for AWS, Azure, GCP, and Kubernetes assessments.",
+      "project_url": "https://github.com/prowler-cloud/prowler",
+      "install_commands": [
+        "pip install --user prowler"
+      ],
+      "run_commands": [
+        "prowler --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "cloud_security.ScoutSuite",
+      "class_name": "ScoutSuite",
+      "category": "cloud_security",
+      "title": "ScoutSuite (Multi-Cloud Auditing)",
+      "description": "Multi-cloud security auditing tool for AWS, Azure, GCP, Alibaba, and Oracle.",
+      "project_url": "https://github.com/nccgroup/ScoutSuite",
+      "install_commands": [
+        "pip install --user scoutsuite"
+      ],
+      "run_commands": [
+        "scout --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "cloud_security.Pacu",
+      "class_name": "Pacu",
+      "category": "cloud_security",
+      "title": "Pacu (AWS Exploitation Framework)",
+      "description": "AWS exploitation framework for offensive security testing of AWS environments.",
+      "project_url": "https://github.com/RhinoSecurityLabs/pacu",
+      "install_commands": [
+        "pip install --user pacu"
+      ],
+      "run_commands": [
+        "pacu --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "cloud_security.Trivy",
+      "class_name": "Trivy",
+      "category": "cloud_security",
+      "title": "Trivy (Container/K8s Scanner)",
+      "description": "Comprehensive vulnerability scanner for containers, Kubernetes, IaC, and code.",
+      "project_url": "https://github.com/aquasecurity/trivy",
+      "install_commands": [
+        "curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin"
+      ],
+      "run_commands": [
+        "trivy --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "ddos.DDoSTool",
+      "class_name": "DDoSTool",
+      "category": "ddos",
+      "title": "DDoS",
+      "description": "Best DDoS Attack Script With 36 Plus Methods. DDoS attacks for SECURITY TESTING PURPOSES ONLY!",
+      "project_url": "https://github.com/the-deepnet/ddos",
+      "install_commands": [
+        "git clone https://github.com/the-deepnet/ddos.git",
+        "cd ddos && sudo pip3 install -r requirements.txt"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": true,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "ddos.SlowLoris",
+      "class_name": "SlowLoris",
+      "category": "ddos",
+      "title": "SlowLoris",
+      "description": "Slowloris is basically an HTTP Denial of Service attack. It sends lots of HTTP requests.",
+      "project_url": "",
+      "install_commands": [
+        "sudo pip3 install slowloris"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": true,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "ddos.Asyncrone",
+      "class_name": "Asyncrone",
+      "category": "ddos",
+      "title": "Asyncrone | Multifunction SYN Flood DDoS Weapon",
+      "description": "aSYNcrone is a C language based, multifunction SYN Flood DDoS Weapon.\nDisable the destination system by sending SYN packets intensively.",
+      "project_url": "https://github.com/fatihsnsy/aSYNcrone",
+      "install_commands": [
+        "git clone https://github.com/fatih4842/aSYNcrone.git",
+        "cd aSYNcrone && sudo gcc aSYNcrone.c -o aSYNcrone -lpthread"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": true,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "ddos.UFONet",
+      "class_name": "UFONet",
+      "category": "ddos",
+      "title": "UFOnet",
+      "description": "UFONet is a free software, P2P and cryptographic disruptive toolkit that allows performing DoS and DDoS attacks.",
+      "project_url": "https://github.com/epsylon/ufonet",
+      "install_commands": [
+        "git clone https://github.com/epsylon/ufonet.git",
+        "cd ufonet && pip install --user ."
+      ],
+      "run_commands": [
+        "python3 ufonet --gui"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": true,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": true,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "ddos.GoldenEye",
+      "class_name": "GoldenEye",
+      "category": "ddos",
+      "title": "GoldenEye",
+      "description": "GoldenEye is a python3 app for SECURITY TESTING PURPOSES ONLY!\nGoldenEye is a HTTP DoS Test Tool.\nUsage: ./goldeneye.py <url> [OPTIONS]",
+      "project_url": "https://github.com/jseidl/GoldenEye",
+      "install_commands": [
+        "git clone https://github.com/jseidl/GoldenEye.git",
+        "chmod -R 755 GoldenEye"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": true,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "ddos.Saphyra",
+      "class_name": "Saphyra",
+      "category": "ddos",
+      "title": "SaphyraDDoS",
+      "description": "A Python DDoS script for SECURITY TESTING PURPOSES ONLY.",
+      "project_url": "https://github.com/anonymous24x7/Saphyra-DDoS",
+      "install_commands": [
+        "git clone https://github.com/anonymous24x7/Saphyra-DDoS.git",
+        "chmod +x Saphyra-DDoS/saphyra.py"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": true,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "exploit_frameworks.RouterSploit",
+      "class_name": "RouterSploit",
+      "category": "exploit_frameworks",
+      "title": "RouterSploit",
+      "description": "The RouterSploit Framework is an open-source exploitation framework dedicated to embedded devices",
+      "project_url": "https://github.com/threat9/routersploit",
+      "install_commands": [
+        "git clone https://github.com/threat9/routersploit.git",
+        "cd routersploit && sudo python3 -m pip install -r requirements.txt"
+      ],
+      "run_commands": [
+        "cd routersploit && sudo python3 rsf.py"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "exploit_frameworks.WebSploit",
+      "class_name": "WebSploit",
+      "category": "exploit_frameworks",
+      "title": "WebSploit",
+      "description": "Websploit is an advanced MITM framework.",
+      "project_url": "https://github.com/The404Hacking/websploit ",
+      "install_commands": [
+        "git clone https://github.com/The404Hacking/websploit.git;cd websploit/Setup;sudo chmod +x install.sh && sudo bash install.sh"
+      ],
+      "run_commands": [
+        "sudo websploit"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "exploit_frameworks.Commix",
+      "class_name": "Commix",
+      "category": "exploit_frameworks",
+      "title": "Commix",
+      "description": "Automated All-in-One OS command injection and exploitation tool.\nCommix can be used from web developers, penetration testers or even security researchers\n in order to test web-based applications with the view to find bugs,\n errors or vulnerabilities related to command injection attacks.\n Usage: python commix.py [option(s)]",
+      "project_url": "https://github.com/commixproject/commix",
+      "install_commands": [
+        "git clone https://github.com/commixproject/commix.git commix",
+        "cd commix && pip install --user ."
+      ],
+      "run_commands": [
+        "cd commix && sudo python3 commix.py --wizard"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": false,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "forensics.Autopsy",
+      "class_name": "Autopsy",
+      "category": "forensics",
+      "title": "Autopsy",
+      "description": "Autopsy is a platform that is used by Cyber Investigators.\n[!] Works in any OS\n[!] Recover Deleted Files from any OS & Media \n[!] Extract Image Metadata",
+      "project_url": "",
+      "install_commands": [],
+      "run_commands": [
+        "sudo autopsy"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": true,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": false,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "forensics.Wireshark",
+      "class_name": "Wireshark",
+      "category": "forensics",
+      "title": "Wireshark",
+      "description": "Wireshark is a network capture and analyzer \ntool to see what’s happening in your network.\n And also investigate Network related incident",
+      "project_url": "",
+      "install_commands": [],
+      "run_commands": [
+        "sudo wireshark"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": true,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": false,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "forensics.BulkExtractor",
+      "class_name": "BulkExtractor",
+      "category": "forensics",
+      "title": "Bulk extractor",
+      "description": "Extract useful information without parsing the file system",
+      "project_url": "https://github.com/simsong/bulk_extractor",
+      "install_commands": [],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": false,
+        "runnable": false,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "forensics.Guymager",
+      "class_name": "Guymager",
+      "category": "forensics",
+      "title": "Disk Clone and ISO Image Acquire",
+      "description": "Guymager is a free forensic imager for media acquisition.",
+      "project_url": "https://guymager.sourceforge.io/",
+      "install_commands": [
+        "sudo apt install guymager"
+      ],
+      "run_commands": [
+        "sudo guymager"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "forensics.Toolsley",
+      "class_name": "Toolsley",
+      "category": "forensics",
+      "title": "Toolsley",
+      "description": "Toolsley got more than ten useful tools for investigation.\n[+]File signature verifier\n[+]File identifier \n[+]Hash & Validate \n[+]Binary inspector \n [+]Encode text \n[+]Data URI generator \n[+]Password generator",
+      "project_url": "https://www.toolsley.com/",
+      "install_commands": [],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": false,
+        "runnable": false,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "forensics.Volatility3",
+      "class_name": "Volatility3",
+      "category": "forensics",
+      "title": "Volatility 3 (Memory Forensics)",
+      "description": "The world's most widely used memory forensics framework.\nUsage: python3 vol.py -f memory.dmp windows.pslist",
+      "project_url": "https://github.com/volatilityfoundation/volatility3",
+      "install_commands": [
+        "git clone https://github.com/volatilityfoundation/volatility3.git",
+        "cd volatility3 && pip install --user -r requirements.txt"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "forensics.Binwalk",
+      "class_name": "Binwalk",
+      "category": "forensics",
+      "title": "Binwalk (Firmware Analysis)",
+      "description": "Analyze, reverse engineer, and extract firmware images.\nUsage: binwalk -e firmware.bin",
+      "project_url": "https://github.com/ReFirmLabs/binwalk",
+      "install_commands": [
+        "pip install --user binwalk"
+      ],
+      "run_commands": [
+        "binwalk --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "forensics.Pspy",
+      "class_name": "Pspy",
+      "category": "forensics",
+      "title": "pspy (Process Monitor — No Root)",
+      "description": "Monitor Linux processes without root — detects cron jobs, scheduled tasks, other users' commands.",
+      "project_url": "https://github.com/DominicBreuker/pspy",
+      "install_commands": [
+        "curl -sSL https://github.com/DominicBreuker/pspy/releases/latest/download/pspy64 -o pspy",
+        "chmod +x pspy"
+      ],
+      "run_commands": [
+        "./pspy --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "information_gathering.NMAP",
+      "class_name": "NMAP",
+      "category": "information_gathering",
+      "title": "Network Map (nmap)",
+      "description": "Free and open source utility for network discovery and security auditing",
+      "project_url": "https://github.com/nmap/nmap",
+      "install_commands": [
+        "git clone https://github.com/nmap/nmap.git",
+        "sudo chmod -R 755 nmap && cd nmap && sudo ./configure && make && sudo make install"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": false,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "information_gathering.Dracnmap",
+      "class_name": "Dracnmap",
+      "category": "information_gathering",
+      "title": "Dracnmap",
+      "description": "Dracnmap is an open source program which is using to \nexploit the network and gathering information with nmap help.",
+      "project_url": "https://github.com/Screetsec/Dracnmap",
+      "install_commands": [
+        "git clone https://github.com/Screetsec/Dracnmap.git",
+        "cd Dracnmap && chmod +x dracnmap-v2.2-dracOs.sh  dracnmap-v2.2.sh"
+      ],
+      "run_commands": [
+        "cd Dracnmap;sudo ./dracnmap-v2.2.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "information_gathering.PortScan",
+      "class_name": "PortScan",
+      "category": "information_gathering",
+      "title": "Port scanning",
+      "description": "",
+      "project_url": "",
+      "install_commands": [],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": false,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "information_gathering.Host2IP",
+      "class_name": "Host2IP",
+      "category": "information_gathering",
+      "title": "Host to IP ",
+      "description": "",
+      "project_url": "",
+      "install_commands": [],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": false,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "information_gathering.XeroSploit",
+      "class_name": "XeroSploit",
+      "category": "information_gathering",
+      "title": "Xerosploit",
+      "description": "Xerosploit is a penetration testing toolkit whose goal is to perform\nman-in-the-middle attacks for testing purposes",
+      "project_url": "https://github.com/LionSec/xerosploit",
+      "install_commands": [
+        "git clone https://github.com/LionSec/xerosploit.git",
+        "cd xerosploit && sudo python install.py"
+      ],
+      "run_commands": [
+        "sudo xerosploit"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "information_gathering.RedHawk",
+      "class_name": "RedHawk",
+      "category": "information_gathering",
+      "title": "RED HAWK (All In One Scanning)",
+      "description": "All in one tool for Information Gathering and Vulnerability Scanning.",
+      "project_url": "https://github.com/Tuhinshubhra/RED_HAWK",
+      "install_commands": [
+        "git clone https://github.com/Tuhinshubhra/RED_HAWK.git"
+      ],
+      "run_commands": [
+        "cd RED_HAWK;php rhawk.php"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "information_gathering.ReconSpider",
+      "class_name": "ReconSpider",
+      "category": "information_gathering",
+      "title": "ReconSpider(For All Scanning)",
+      "description": "ReconSpider is most Advanced Open Source Intelligence (OSINT) Framework for scanning IP Address, Emails, \nWebsites, Organizations and find out information from different sources.",
+      "project_url": "https://github.com/bhavsec/reconspider",
+      "install_commands": [
+        "git clone https://github.com/bhavsec/reconspider.git",
+        "sudo apt install -y python3 python3-pip && cd reconspider && pip install --user ."
+      ],
+      "run_commands": [
+        "cd reconspider;python3 reconspider.py"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "information_gathering.IsItDown",
+      "class_name": "IsItDown",
+      "category": "information_gathering",
+      "title": "IsItDown (Check Website Down/Up)",
+      "description": "Check Website Is Online or Not",
+      "project_url": "",
+      "install_commands": [],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": false,
+        "runnable": false,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "information_gathering.Infoga",
+      "class_name": "Infoga",
+      "category": "information_gathering",
+      "title": "Infoga - Email OSINT",
+      "description": "Infoga is a tool gathering email accounts information\n(ip, hostname, country,...) from different public source",
+      "project_url": "https://github.com/m4ll0k/Infoga",
+      "install_commands": [
+        "git clone https://github.com/m4ll0k/Infoga.git",
+        "cd Infoga && pip install --user ."
+      ],
+      "run_commands": [
+        "cd Infoga;python3 infoga.py"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "information_gathering.ReconDog",
+      "class_name": "ReconDog",
+      "category": "information_gathering",
+      "title": "ReconDog",
+      "description": "ReconDog Information Gathering Suite",
+      "project_url": "https://github.com/s0md3v/ReconDog",
+      "install_commands": [
+        "git clone https://github.com/s0md3v/ReconDog.git"
+      ],
+      "run_commands": [
+        "cd ReconDog;sudo python dog"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "information_gathering.Striker",
+      "class_name": "Striker",
+      "category": "information_gathering",
+      "title": "Striker",
+      "description": "Recon & Vulnerability Scanning Suite",
+      "project_url": "https://github.com/s0md3v/Striker",
+      "install_commands": [
+        "git clone https://github.com/s0md3v/Striker.git",
+        "cd Striker && pip3 install -r requirements.txt"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "information_gathering.SecretFinder",
+      "class_name": "SecretFinder",
+      "category": "information_gathering",
+      "title": "SecretFinder (like API & etc)",
+      "description": "SecretFinder - A python script for find sensitive data \nlike apikeys, accesstoken, authorizations, jwt,..etc \n and search anything on javascript files.\n\n Usage: python SecretFinder.py -h",
+      "project_url": "https://github.com/m4ll0k/SecretFinder",
+      "install_commands": [
+        "git clone https://github.com/m4ll0k/SecretFinder.git secretfinder",
+        "cd secretfinder; sudo pip3 install -r requirements.txt"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": false,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "information_gathering.Shodan",
+      "class_name": "Shodan",
+      "category": "information_gathering",
+      "title": "Find Info Using Shodan",
+      "description": "Get ports, vulnerabilities, information, banners,..etc \n for any IP with Shodan (no apikey! no rate limit!)\n[X] Don't use this tool because your ip will be blocked by Shodan!",
+      "project_url": "https://github.com/m4ll0k/Shodanfy.py",
+      "install_commands": [
+        "git clone https://github.com/m4ll0k/Shodanfy.py.git"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": false,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "information_gathering.PortScannerRanger",
+      "class_name": "PortScannerRanger",
+      "category": "information_gathering",
+      "title": "Port Scanner - rang3r",
+      "description": "rang3r is a python script which scans in multi thread\n all alive hosts within your range that you specify.",
+      "project_url": "https://github.com/floriankunushevci/rang3r",
+      "install_commands": [
+        "git clone https://github.com/floriankunushevci/rang3r.git;pip install --user termcolor"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "information_gathering.Breacher",
+      "class_name": "Breacher",
+      "category": "information_gathering",
+      "title": "Breacher",
+      "description": "An advanced multithreaded admin panel finder written in python.",
+      "project_url": "https://github.com/s0md3v/Breacher",
+      "install_commands": [
+        "git clone https://github.com/s0md3v/Breacher.git"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "information_gathering.TheHarvester",
+      "class_name": "TheHarvester",
+      "category": "information_gathering",
+      "title": "theHarvester (OSINT)",
+      "description": "Gather emails, names, subdomains, IPs and URLs from public sources.\nUsage: theHarvester -d example.com -b all",
+      "project_url": "https://github.com/laramies/theHarvester",
+      "install_commands": [
+        "git clone https://github.com/laramies/theHarvester.git",
+        "cd theHarvester && pip install --user -r requirements/base.txt"
+      ],
+      "run_commands": [
+        "cd theHarvester && python3 theHarvester.py -h"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "information_gathering.Amass",
+      "class_name": "Amass",
+      "category": "information_gathering",
+      "title": "Amass (Attack Surface Mapping)",
+      "description": "In-depth subdomain enumeration and attack surface mapping.\nUsage: amass enum -d example.com",
+      "project_url": "https://github.com/owasp-amass/amass",
+      "install_commands": [
+        "go install -v github.com/owasp-amass/amass/v4/...@master"
+      ],
+      "run_commands": [
+        "amass -h"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "information_gathering.Masscan",
+      "class_name": "Masscan",
+      "category": "information_gathering",
+      "title": "Masscan (Fast Port Scanner)",
+      "description": "Fastest internet port scanner — 10 million packets/sec.\nUsage: masscan -p1-65535 <IP> --rate=1000",
+      "project_url": "https://github.com/robertdavidgraham/masscan",
+      "install_commands": [
+        "sudo apt-get install -y masscan"
+      ],
+      "run_commands": [
+        "masscan --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "information_gathering.RustScan",
+      "class_name": "RustScan",
+      "category": "information_gathering",
+      "title": "RustScan (Modern Port Scanner)",
+      "description": "Scans all 65k ports in 3 seconds, passes results to nmap automatically.\nUsage: rustscan -a <IP> -- -sV",
+      "project_url": "https://github.com/RustScan/RustScan",
+      "install_commands": [
+        "curl -sLO https://github.com/RustScan/RustScan/releases/latest/download/rustscan_2.3.0_amd64.deb",
+        "sudo dpkg -i rustscan_2.3.0_amd64.deb"
+      ],
+      "run_commands": [
+        "rustscan --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "information_gathering.Holehe",
+      "class_name": "Holehe",
+      "category": "information_gathering",
+      "title": "Holehe (Email → Social Accounts)",
+      "description": "Check if an email address is registered on 120+ websites.\nUsage: holehe user@example.com",
+      "project_url": "https://github.com/megadose/holehe",
+      "install_commands": [
+        "pip install --user holehe"
+      ],
+      "run_commands": [
+        "holehe --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "information_gathering.Maigret",
+      "class_name": "Maigret",
+      "category": "information_gathering",
+      "title": "Maigret (Username OSINT)",
+      "description": "Collect a dossier on a person by username across 3000+ sites.\nUsage: maigret <username>",
+      "project_url": "https://github.com/soxoj/maigret",
+      "install_commands": [
+        "pip install --user maigret"
+      ],
+      "run_commands": [
+        "maigret --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "information_gathering.Httpx",
+      "class_name": "Httpx",
+      "category": "information_gathering",
+      "title": "httpx (HTTP Toolkit)",
+      "description": "Fast multi-purpose HTTP probing tool.\nUsage: httpx -l urls.txt -status-code -title -tech-detect",
+      "project_url": "https://github.com/projectdiscovery/httpx",
+      "install_commands": [
+        "go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest"
+      ],
+      "run_commands": [
+        "httpx -h"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "information_gathering.SpiderFoot",
+      "class_name": "SpiderFoot",
+      "category": "information_gathering",
+      "title": "SpiderFoot (OSINT Automation)",
+      "description": "Automates OSINT collection for threat intelligence and attack surface mapping.",
+      "project_url": "https://github.com/smicallef/spiderfoot",
+      "install_commands": [
+        "pip install --user spiderfoot"
+      ],
+      "run_commands": [
+        "spiderfoot -h"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "information_gathering.Subfinder",
+      "class_name": "Subfinder",
+      "category": "information_gathering",
+      "title": "Subfinder (Subdomain Enumeration)",
+      "description": "Fast passive subdomain enumeration using multiple sources.",
+      "project_url": "https://github.com/projectdiscovery/subfinder",
+      "install_commands": [
+        "go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest"
+      ],
+      "run_commands": [
+        "subfinder -h"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "information_gathering.TruffleHog",
+      "class_name": "TruffleHog",
+      "category": "information_gathering",
+      "title": "TruffleHog (Secret Scanner)",
+      "description": "Find, verify, and analyze leaked credentials across git repos, S3 buckets, filesystems.",
+      "project_url": "https://github.com/trufflesecurity/trufflehog",
+      "install_commands": [
+        "pip install --user trufflehog"
+      ],
+      "run_commands": [
+        "trufflehog --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "information_gathering.Gitleaks",
+      "class_name": "Gitleaks",
+      "category": "information_gathering",
+      "title": "Gitleaks (Git Secret Scanner)",
+      "description": "Fast secret scanner for git repos — detects hardcoded passwords, API keys, tokens.",
+      "project_url": "https://github.com/gitleaks/gitleaks",
+      "install_commands": [
+        "go install github.com/gitleaks/gitleaks/v8@latest"
+      ],
+      "run_commands": [
+        "gitleaks --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "mobile_security.MobSF",
+      "class_name": "MobSF",
+      "category": "mobile_security",
+      "title": "MobSF (Mobile Security Framework)",
+      "description": "All-in-one mobile app pentesting, malware analysis, and security assessment.",
+      "project_url": "https://github.com/MobSF/Mobile-Security-Framework-MobSF",
+      "install_commands": [
+        "git clone https://github.com/MobSF/Mobile-Security-Framework-MobSF.git",
+        "cd Mobile-Security-Framework-MobSF && ./setup.sh"
+      ],
+      "run_commands": [
+        "cd Mobile-Security-Framework-MobSF && ./run.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "mobile_security.Frida",
+      "class_name": "Frida",
+      "category": "mobile_security",
+      "title": "Frida (Dynamic Instrumentation)",
+      "description": "Dynamic instrumentation toolkit for runtime hooking on Android, iOS, Windows, macOS, Linux.",
+      "project_url": "https://github.com/frida/frida",
+      "install_commands": [
+        "pip install --user frida-tools"
+      ],
+      "run_commands": [
+        "frida --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "mobile_security.Objection",
+      "class_name": "Objection",
+      "category": "mobile_security",
+      "title": "Objection (Mobile Runtime Exploration)",
+      "description": "Runtime mobile exploration toolkit powered by Frida — no jailbreak/root required.",
+      "project_url": "https://github.com/sensepost/objection",
+      "install_commands": [
+        "pip install --user objection"
+      ],
+      "run_commands": [
+        "objection --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "other_tools.HatCloud",
+      "class_name": "HatCloud",
+      "category": "other_tools",
+      "title": "HatCloud(Bypass CloudFlare for IP)",
+      "description": "HatCloud build in Ruby. It makes bypass in CloudFlare for discover real IP.",
+      "project_url": "https://github.com/HatBashBR/HatCloud",
+      "install_commands": [
+        "git clone https://github.com/HatBashBR/HatCloud.git"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "payload_creator.TheFatRat",
+      "class_name": "TheFatRat",
+      "category": "payload_creator",
+      "title": "The FatRat",
+      "description": "TheFatRat provides an easy way to create backdoors and payloads which can bypass most anti-virus.",
+      "project_url": "https://github.com/Screetsec/TheFatRat",
+      "install_commands": [
+        "git clone https://github.com/Screetsec/TheFatRat.git",
+        "cd TheFatRat && chmod +x setup.sh"
+      ],
+      "run_commands": [
+        "cd TheFatRat && sudo bash setup.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "payload_creator.Brutal",
+      "class_name": "Brutal",
+      "category": "payload_creator",
+      "title": "Brutal",
+      "description": "Brutal is a toolkit to quickly create various payloads, powershell attacks, virus attacks and launch listener for a Human Interface Device.",
+      "project_url": "https://github.com/Screetsec/Brutal",
+      "install_commands": [
+        "git clone https://github.com/Screetsec/Brutal.git",
+        "cd Brutal && chmod +x Brutal.sh"
+      ],
+      "run_commands": [
+        "cd Brutal && sudo bash Brutal.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "payload_creator.Stitch",
+      "class_name": "Stitch",
+      "category": "payload_creator",
+      "title": "Stitch",
+      "description": "Stitch is a Cross Platform Python Remote Administrator Tool.\n[!] Refer to the project link for Windows & macOS support.",
+      "project_url": "https://nathanlopez.github.io/Stitch",
+      "install_commands": [
+        "git clone https://github.com/nathanlopez/Stitch.git",
+        "cd Stitch && pip install --user -r lnx_requirements.txt"
+      ],
+      "run_commands": [
+        "cd Stitch && sudo python3 main.py"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "payload_creator.MSFVenom",
+      "class_name": "MSFVenom",
+      "category": "payload_creator",
+      "title": "MSFvenom Payload Creator",
+      "description": "MSFvenom Payload Creator (MSFPC) is a wrapper to generate multiple types of payloads, based on user choice.",
+      "project_url": "https://github.com/g0tmi1k/msfpc",
+      "install_commands": [
+        "git clone https://github.com/g0tmi1k/msfpc.git",
+        "cd msfpc && chmod +x msfpc.sh"
+      ],
+      "run_commands": [
+        "cd msfpc && sudo bash msfpc.sh -h -v"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "payload_creator.Venom",
+      "class_name": "Venom",
+      "category": "payload_creator",
+      "title": "Venom Shellcode Generator",
+      "description": "Venom exploits apache2 webserver to deliver LAN payloads via fake webpages.",
+      "project_url": "https://github.com/r00t-3xp10it/venom",
+      "install_commands": [
+        "git clone https://github.com/r00t-3xp10it/venom.git",
+        "sudo chmod -R 775 venom*/ && cd venom*/ && cd aux && sudo bash setup.sh"
+      ],
+      "run_commands": [
+        "cd venom && sudo ./venom.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "payload_creator.Spycam",
+      "class_name": "Spycam",
+      "category": "payload_creator",
+      "title": "Spycam",
+      "description": "Generates a Win32 payload that captures webcam images every 1 minute.",
+      "project_url": "https://github.com/indexnotfound404/spycam",
+      "install_commands": [
+        "git clone https://github.com/indexnotfound404/spycam.git",
+        "cd spycam && bash install.sh && chmod +x spycam"
+      ],
+      "run_commands": [
+        "cd spycam && ./spycam"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "payload_creator.MobDroid",
+      "class_name": "MobDroid",
+      "category": "payload_creator",
+      "title": "Mob-Droid",
+      "description": "Generates metasploit payloads easily without typing long commands.",
+      "project_url": "https://github.com/kinghacker0/Mob-Droid",
+      "install_commands": [
+        "git clone https://github.com/kinghacker0/mob-droid.git"
+      ],
+      "run_commands": [
+        "cd mob-droid && sudo python3 mob-droid.py"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "payload_creator.Enigma",
+      "class_name": "Enigma",
+      "category": "payload_creator",
+      "title": "Enigma",
+      "description": "Enigma is a Multiplatform payload dropper.",
+      "project_url": "https://github.com/UndeadSec/Enigma",
+      "install_commands": [
+        "git clone https://github.com/UndeadSec/Enigma.git"
+      ],
+      "run_commands": [
+        "cd Enigma && sudo python3 enigma.py"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "phishing_attack.Autophisher",
+      "class_name": "Autophisher",
+      "category": "phishing_attack",
+      "title": "Autophisher RK",
+      "description": "Automated Phishing Toolkit",
+      "project_url": "https://github.com/CodingRanjith/autophisher",
+      "install_commands": [
+        "git clone https://github.com/CodingRanjith/autophisher.git"
+      ],
+      "run_commands": [
+        "cd autophisher && sudo bash autophisher.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "phishing_attack.Pyphisher",
+      "class_name": "Pyphisher",
+      "category": "phishing_attack",
+      "title": "Pyphisher",
+      "description": "Easy to use phishing tool with 77 website templates",
+      "project_url": "https://github.com/KasRoudra/PyPhisher",
+      "install_commands": [
+        "git clone https://github.com/KasRoudra/PyPhisher",
+        "pip3 install --user -r PyPhisher/files/requirements.txt"
+      ],
+      "run_commands": [
+        "cd PyPhisher && sudo python3 pyphisher.py"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "phishing_attack.AdvPhishing",
+      "class_name": "AdvPhishing",
+      "category": "phishing_attack",
+      "title": "AdvPhishing",
+      "description": "This is Advance Phishing Tool ! OTP PHISHING",
+      "project_url": "https://github.com/Ignitetch/AdvPhishing",
+      "install_commands": [
+        "git clone https://github.com/Ignitetch/AdvPhishing.git",
+        "cd AdvPhishing && chmod +x Linux-Setup.sh && bash Linux-Setup.sh"
+      ],
+      "run_commands": [
+        "cd AdvPhishing && sudo bash AdvPhishing.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "phishing_attack.Setoolkit",
+      "class_name": "Setoolkit",
+      "category": "phishing_attack",
+      "title": "Setoolkit",
+      "description": "The Social-Engineer Toolkit is an open-source penetration\ntesting framework designed for social engineering.",
+      "project_url": "https://github.com/trustedsec/social-engineer-toolkit",
+      "install_commands": [
+        "git clone https://github.com/trustedsec/social-engineer-toolkit/",
+        "cd social-engineer-toolkit && pip install --user ."
+      ],
+      "run_commands": [
+        "sudo setoolkit"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "phishing_attack.SocialFish",
+      "class_name": "SocialFish",
+      "category": "phishing_attack",
+      "title": "SocialFish",
+      "description": "Automated Phishing Tool & Information Collector NOTE: username is 'root' and password is 'pass'",
+      "project_url": "https://github.com/UndeadSec/SocialFish",
+      "install_commands": [
+        "git clone https://github.com/UndeadSec/SocialFish.git && sudo apt-get install python3 python3-pip python3-dev -y",
+        "cd SocialFish && sudo python3 -m pip install -r requirements.txt"
+      ],
+      "run_commands": [
+        "cd SocialFish && sudo python3 SocialFish.py root pass"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "phishing_attack.HiddenEye",
+      "class_name": "HiddenEye",
+      "category": "phishing_attack",
+      "title": "HiddenEye",
+      "description": "Modern Phishing Tool With Advanced Functionality And Multiple Tunnelling Services\n\t[!] https://github.com/DarkSecDevelopers/HiddenEye",
+      "project_url": "https://github.com/Morsmalleo/HiddenEye",
+      "install_commands": [
+        "git clone https://github.com/Morsmalleo/HiddenEye.git && chmod -R 755 HiddenEye",
+        "cd HiddenEye && sudo pip3 install -r requirements.txt && pip3 install pyngrok"
+      ],
+      "run_commands": [
+        "cd HiddenEye && sudo python3 HiddenEye.py"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "phishing_attack.Evilginx3",
+      "class_name": "Evilginx3",
+      "category": "phishing_attack",
+      "title": "Evilginx3",
+      "description": "evilginx is a man-in-the-middle attack framework used for phishing login credentials\nalong with session cookies, bypassing 2-factor authentication.\nRequires Go >= 1.18 installed.",
+      "project_url": "https://github.com/kgretzky/evilginx2",
+      "install_commands": [
+        "sudo apt-get install -y git make golang-go",
+        "go install github.com/kgretzky/evilginx/v3@latest"
+      ],
+      "run_commands": [
+        "evilginx"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "phishing_attack.ISeeYou",
+      "class_name": "ISeeYou",
+      "category": "phishing_attack",
+      "title": "I-See_You",
+      "description": "[!] ISeeYou finds the exact location of a target via social engineering.\n[!] Expose local servers to the internet and decode location from log file.",
+      "project_url": "https://github.com/Viralmaniar/I-See-You",
+      "install_commands": [
+        "git clone https://github.com/Viralmaniar/I-See-You.git",
+        "cd I-See-You && sudo chmod u+x ISeeYou.sh"
+      ],
+      "run_commands": [
+        "cd I-See-You && sudo bash ISeeYou.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "phishing_attack.SayCheese",
+      "class_name": "SayCheese",
+      "category": "phishing_attack",
+      "title": "SayCheese",
+      "description": "Take webcam shots from target just by sending a malicious link",
+      "project_url": "https://github.com/hangetzzu/saycheese",
+      "install_commands": [
+        "git clone https://github.com/hangetzzu/saycheese"
+      ],
+      "run_commands": [
+        "cd saycheese && sudo bash saycheese.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "phishing_attack.QRJacking",
+      "class_name": "QRJacking",
+      "category": "phishing_attack",
+      "title": "QR Code Jacking",
+      "description": "QR Code Jacking (Any Website)",
+      "project_url": "https://github.com/cryptedwolf/ohmyqr",
+      "install_commands": [
+        "git clone https://github.com/cryptedwolf/ohmyqr.git && sudo apt -y install scrot"
+      ],
+      "run_commands": [
+        "cd ohmyqr && sudo bash ohmyqr.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "phishing_attack.BlackEye",
+      "class_name": "BlackEye",
+      "category": "phishing_attack",
+      "title": "BlackEye",
+      "description": "The ultimate phishing tool with 38 websites available!",
+      "project_url": "https://github.com/An0nUD4Y/blackeye",
+      "install_commands": [
+        "git clone https://github.com/thelinuxchoice/blackeye"
+      ],
+      "run_commands": [
+        "cd blackeye && sudo bash blackeye.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "phishing_attack.ShellPhish",
+      "class_name": "ShellPhish",
+      "category": "phishing_attack",
+      "title": "ShellPhish",
+      "description": "Phishing Tool for 18 social media",
+      "project_url": "https://github.com/An0nUD4Y/shellphish",
+      "install_commands": [
+        "git clone https://github.com/An0nUD4Y/shellphish.git"
+      ],
+      "run_commands": [
+        "cd shellphish && sudo bash shellphish.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "phishing_attack.Thanos",
+      "class_name": "Thanos",
+      "category": "phishing_attack",
+      "title": "Thanos",
+      "description": "Browser to Browser Phishing toolkit",
+      "project_url": "https://github.com/TridevReddy/Thanos",
+      "install_commands": [
+        "git clone https://github.com/TridevReddy/Thanos.git",
+        "cd Thanos && chmod +x Thanos.sh"
+      ],
+      "run_commands": [
+        "cd Thanos && sudo bash Thanos.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "phishing_attack.QRLJacking",
+      "class_name": "QRLJacking",
+      "category": "phishing_attack",
+      "title": "QRLJacking",
+      "description": "QRLJacking — session hijacking attack vector targeting QR code based login",
+      "project_url": "https://github.com/OWASP/QRLJacking",
+      "install_commands": [
+        "git clone https://github.com/OWASP/QRLJacking.git",
+        "GECKO_VER=$(curl -s https://api.github.com/repos/mozilla/geckodriver/releases/latest | grep tag_name | cut -d '\"' -f4) && wget -q https://github.com/mozilla/geckodriver/releases/download/$GECKO_VER/geckodriver-$GECKO_VER-linux64.tar.gz -O /tmp/geckodriver.tar.gz && tar -xzf /tmp/geckodriver.tar.gz -C /tmp && sudo mv /tmp/geckodriver /usr/local/bin/",
+        "cd QRLJacking && pip3 install --user -r QRLJacker/requirements.txt"
+      ],
+      "run_commands": [
+        "cd QRLJacking/QRLJacker && python3 QrlJacker.py"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "phishing_attack.Maskphish",
+      "class_name": "Maskphish",
+      "category": "phishing_attack",
+      "title": "Maskphish",
+      "description": "Hide phishing URL under a normal looking URL (google.com or facebook.com)",
+      "project_url": "https://github.com/jaykali/maskphish",
+      "install_commands": [
+        "git clone https://github.com/jaykali/maskphish.git"
+      ],
+      "run_commands": [
+        "cd maskphish && sudo bash maskphish.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "phishing_attack.BlackPhish",
+      "class_name": "BlackPhish",
+      "category": "phishing_attack",
+      "title": "BlackPhish",
+      "description": "",
+      "project_url": "https://github.com/iinc0gnit0/BlackPhish",
+      "install_commands": [
+        "git clone https://github.com/iinc0gnit0/BlackPhish.git",
+        "cd BlackPhish && sudo bash install.sh"
+      ],
+      "run_commands": [
+        "cd BlackPhish && sudo python3 blackphish.py"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "phishing_attack.Dnstwist",
+      "class_name": "Dnstwist",
+      "category": "phishing_attack",
+      "title": "dnstwist",
+      "description": "Domain name permutation engine for detecting typosquatting, phishing and brand impersonation",
+      "project_url": "https://github.com/elceef/dnstwist",
+      "install_commands": [
+        "pip3 install --user dnstwist"
+      ],
+      "run_commands": [
+        "dnstwist --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "post_exploitation.Vegile",
+      "class_name": "Vegile",
+      "category": "post_exploitation",
+      "title": "Vegile - Ghost In The Shell",
+      "description": "This tool will set up your backdoor/rootkits when backdoor is already setup it will be \nhidden your specific process,unlimited your session in metasploit and transparent.",
+      "project_url": "https://github.com/Screetsec/Vegile",
+      "install_commands": [
+        "git clone https://github.com/Screetsec/Vegile.git",
+        "cd Vegile && sudo chmod +x Vegile"
+      ],
+      "run_commands": [
+        "cd Vegile && sudo bash Vegile"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "post_exploitation.ChromeKeyLogger",
+      "class_name": "ChromeKeyLogger",
+      "category": "post_exploitation",
+      "title": "Chrome Keylogger",
+      "description": "Hera Chrome Keylogger",
+      "project_url": "https://github.com/UndeadSec/HeraKeylogger",
+      "install_commands": [
+        "git clone https://github.com/UndeadSec/HeraKeylogger.git",
+        "cd HeraKeylogger && sudo apt-get install python3-pip -y && sudo pip3 install -r requirements.txt"
+      ],
+      "run_commands": [
+        "cd HeraKeylogger && sudo python3 hera.py"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "post_exploitation.PwncatCS",
+      "class_name": "PwncatCS",
+      "category": "post_exploitation",
+      "title": "pwncat-cs (Reverse Shell Handler)",
+      "description": "Post-exploitation platform — manages reverse/bind shells with automation.\nHandles file upload/download, persistence, privilege escalation.\nUsage: pwncat-cs -lp 4444",
+      "project_url": "https://github.com/calebstewart/pwncat",
+      "install_commands": [
+        "pip install --user pwncat-cs"
+      ],
+      "run_commands": [
+        "pwncat-cs --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "post_exploitation.Sliver",
+      "class_name": "Sliver",
+      "category": "post_exploitation",
+      "title": "Sliver (C2 Framework)",
+      "description": "Cross-platform adversary emulation/red team C2 framework — mTLS, HTTP(S), DNS, WireGuard.",
+      "project_url": "https://github.com/BishopFox/sliver",
+      "install_commands": [
+        "curl -sSf https://sliver.sh/install -o /tmp/sliver-install.sh",
+        "sudo bash /tmp/sliver-install.sh"
+      ],
+      "run_commands": [
+        "sliver --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "post_exploitation.Havoc",
+      "class_name": "Havoc",
+      "category": "post_exploitation",
+      "title": "Havoc (C2 Framework)",
+      "description": "Modern post-exploitation C2 framework with EDR evasion. Cobalt Strike alternative.",
+      "project_url": "https://github.com/HavocFramework/Havoc",
+      "install_commands": [
+        "git clone https://github.com/HavocFramework/Havoc.git",
+        "cd Havoc && make"
+      ],
+      "run_commands": [
+        "cd Havoc && ./havoc --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "post_exploitation.PEASSng",
+      "class_name": "PEASSng",
+      "category": "post_exploitation",
+      "title": "PEASS-ng — LinPEAS/WinPEAS (Priv Esc)",
+      "description": "Privilege escalation enumeration scripts for Linux and Windows.",
+      "project_url": "https://github.com/peass-ng/PEASS-ng",
+      "install_commands": [
+        "curl -sSL https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh -o linpeas.sh",
+        "chmod +x linpeas.sh"
+      ],
+      "run_commands": [
+        "./linpeas.sh --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "post_exploitation.LigoloNg",
+      "class_name": "LigoloNg",
+      "category": "post_exploitation",
+      "title": "Ligolo-ng (Tunneling/Pivoting)",
+      "description": "Advanced tunneling/pivoting tool using TUN interfaces — no SOCKS needed.",
+      "project_url": "https://github.com/nicocha30/ligolo-ng",
+      "install_commands": [
+        "go install github.com/nicocha30/ligolo-ng@latest"
+      ],
+      "run_commands": [
+        "ligolo-ng --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "post_exploitation.ChiselTunnel",
+      "class_name": "ChiselTunnel",
+      "category": "post_exploitation",
+      "title": "Chisel (HTTP Tunnel)",
+      "description": "Fast TCP/UDP tunnel over HTTP, secured via SSH — pivoting and port forwarding.",
+      "project_url": "https://github.com/jpillora/chisel",
+      "install_commands": [
+        "go install github.com/jpillora/chisel@latest"
+      ],
+      "run_commands": [
+        "chisel --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "post_exploitation.EvilWinRM",
+      "class_name": "EvilWinRM",
+      "category": "post_exploitation",
+      "title": "Evil-WinRM (Windows Remote Shell)",
+      "description": "Ultimate WinRM shell for hacking/pentesting Windows machines.",
+      "project_url": "https://github.com/Hackplayers/evil-winrm",
+      "install_commands": [
+        "gem install evil-winrm"
+      ],
+      "run_commands": [
+        "evil-winrm --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "post_exploitation.Mythic",
+      "class_name": "Mythic",
+      "category": "post_exploitation",
+      "title": "Mythic (C2 Platform)",
+      "description": "Collaborative, multi-payload C2 platform designed for red team operations.",
+      "project_url": "https://github.com/its-a-feature/Mythic",
+      "install_commands": [
+        "git clone https://github.com/its-a-feature/Mythic.git",
+        "cd Mythic && sudo make"
+      ],
+      "run_commands": [
+        "cd Mythic && sudo ./mythic-cli start"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "remote_administration.Pyshell",
+      "class_name": "Pyshell",
+      "category": "remote_administration",
+      "title": "Pyshell",
+      "description": "Pyshell is a Rat Tool that can be able to download & upload files,\n Execute OS Command and more..",
+      "project_url": "https://github.com/knassar702/pyshell",
+      "install_commands": [
+        "git clone https://github.com/knassar702/Pyshell.git;pip install --user pyscreenshot python-nmap requests"
+      ],
+      "run_commands": [
+        "cd Pyshell;./Pyshell"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "reverse_engineering.AndroGuard",
+      "class_name": "AndroGuard",
+      "category": "reverse_engineering",
+      "title": "Androguard",
+      "description": "Androguard is a Reverse engineering, Malware and goodware analysis of Android applications and more",
+      "project_url": "https://github.com/androguard/androguard ",
+      "install_commands": [
+        "sudo pip3 install -U androguard"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": false,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "reverse_engineering.Apk2Gold",
+      "class_name": "Apk2Gold",
+      "category": "reverse_engineering",
+      "title": "Apk2Gold",
+      "description": "Apk2Gold is a CLI tool for decompiling Android apps to Java",
+      "project_url": "https://github.com/lxdvs/apk2gold ",
+      "install_commands": [
+        "git clone https://github.com/lxdvs/apk2gold.git",
+        "cd apk2gold;sudo bash make.sh"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "reverse_engineering.Jadx",
+      "class_name": "Jadx",
+      "category": "reverse_engineering",
+      "title": "JadX",
+      "description": "Jadx is Dex to Java decompiler.\n[*] decompile Dalvik bytecode to java classes from APK, dex, aar and zip files\n[*] decode AndroidManifest.xml and other resources from resources.arsc",
+      "project_url": "https://github.com/skylot/jadx",
+      "install_commands": [
+        "git clone https://github.com/skylot/jadx.git",
+        "java -version 2>&1 | grep -q 'version' && cd jadx && ./gradlew dist || echo '[ERROR] Java not found. Install: sudo apt install default-jdk'"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": false,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "reverse_engineering.Ghidra",
+      "class_name": "Ghidra",
+      "category": "reverse_engineering",
+      "title": "Ghidra (NSA Reverse Engineering)",
+      "description": "NSA's software reverse engineering framework — disassembly, decompilation, scripting.",
+      "project_url": "https://github.com/NationalSecurityAgency/ghidra",
+      "install_commands": [
+        "sudo apt-get install -y ghidra || echo 'Download from https://ghidra-sre.org/'"
+      ],
+      "run_commands": [
+        "ghidra --help || echo 'Run: ghidraRun'"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": true,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "reverse_engineering.Radare2",
+      "class_name": "Radare2",
+      "category": "reverse_engineering",
+      "title": "Radare2 (RE Framework)",
+      "description": "Portable UNIX-like reverse engineering framework and command-line toolset.",
+      "project_url": "https://github.com/radareorg/radare2",
+      "install_commands": [
+        "git clone https://github.com/radareorg/radare2.git",
+        "cd radare2 && sys/install.sh"
+      ],
+      "run_commands": [
+        "r2 -h"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "sql_injection.Sqlmap",
+      "class_name": "Sqlmap",
+      "category": "sql_injection",
+      "title": "Sqlmap tool",
+      "description": "sqlmap is an open source penetration testing tool that automates the process of detecting and exploiting SQL injection flaws and taking over database servers. [!] python3 sqlmap.py -u [http://example.com] --batch --banner. More usage: https://github.com/sqlmapproject/sqlmap/wiki/Usage",
+      "project_url": "https://github.com/sqlmapproject/sqlmap",
+      "install_commands": [
+        "git clone --depth 1 https://github.com/sqlmapproject/sqlmap.git sqlmap-dev"
+      ],
+      "run_commands": [
+        "cd sqlmap-dev;python3 sqlmap.py --wizard"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "sql_injection.NoSqlMap",
+      "class_name": "NoSqlMap",
+      "category": "sql_injection",
+      "title": "NoSqlMap",
+      "description": "NoSQLMap is an open source Python tool designed to audit and automate injection attacks. [*] Please install MongoDB.",
+      "project_url": "https://github.com/codingo/NoSQLMap",
+      "install_commands": [
+        "git clone https://github.com/codingo/NoSQLMap.git",
+        "cd NoSQLMap && pip install --user ."
+      ],
+      "run_commands": [
+        "python3 -m nosqlmap"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "sql_injection.SQLiScanner",
+      "class_name": "SQLiScanner",
+      "category": "sql_injection",
+      "title": "Damn Small SQLi Scanner",
+      "description": "DSSS is a fully functional SQL injection vulnerability scanner also supporting GET and POST parameters. Usage: python3 dsss.py -h | -u [URL]",
+      "project_url": "https://github.com/stamparm/DSSS",
+      "install_commands": [
+        "git clone https://github.com/stamparm/DSSS.git"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": false,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "sql_injection.Explo",
+      "class_name": "Explo",
+      "category": "sql_injection",
+      "title": "Explo",
+      "description": "Explo is a simple tool to describe web security issues in human and machine readable format. Usage: explo [--verbose|-v] testcase.yaml | explo [--verbose|-v] examples/*.yaml",
+      "project_url": "https://github.com/dtag-dev-sec/explo",
+      "install_commands": [
+        "git clone https://github.com/dtag-dev-sec/explo.git",
+        "cd explo && pip install --user ."
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": false,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "sql_injection.Blisqy",
+      "class_name": "Blisqy",
+      "category": "sql_injection",
+      "title": "Blisqy - Exploit Time-based blind-SQL injection",
+      "description": "Blisqy helps web security researchers find time-based blind SQL injections on HTTP headers and exploit them.",
+      "project_url": "https://github.com/JohnTroony/Blisqy",
+      "install_commands": [
+        "git clone https://github.com/JohnTroony/Blisqy.git"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": false,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "sql_injection.Leviathan",
+      "class_name": "Leviathan",
+      "category": "sql_injection",
+      "title": "Leviathan - Wide Range Mass Audit Toolkit",
+      "description": "Leviathan is a mass audit toolkit with service discovery, brute force, SQL injection detection, and custom exploit capabilities. Requires API keys.",
+      "project_url": "https://github.com/leviathan-framework/leviathan",
+      "install_commands": [
+        "git clone https://github.com/leviathan-framework/leviathan.git",
+        "cd leviathan;pip install --user -r requirements.txt"
+      ],
+      "run_commands": [
+        "cd leviathan;python leviathan.py"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "sql_injection.SQLScan",
+      "class_name": "SQLScan",
+      "category": "sql_injection",
+      "title": "SQLScan",
+      "description": "SQLScan is a quick web scanner to find SQL injection points. Not for educational purposes.",
+      "project_url": "https://github.com/Cvar1984/sqlscan",
+      "install_commands": [
+        "sudo apt install php php-bz2 php-curl php-mbstring curl",
+        "sudo curl https://raw.githubusercontent.com/Cvar1984/sqlscan/dev/build/main.phar --output /usr/local/bin/sqlscan",
+        "chmod +x /usr/local/bin/sqlscan"
+      ],
+      "run_commands": [
+        "sudo sqlscan"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "steganography.SteganoHide",
+      "class_name": "SteganoHide",
+      "category": "steganography",
+      "title": "SteganoHide",
+      "description": "",
+      "project_url": "",
+      "install_commands": [
+        "sudo apt-get install steghide -y"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "steganography.StegnoCracker",
+      "class_name": "StegnoCracker",
+      "category": "steganography",
+      "title": "StegnoCracker",
+      "description": "SteganoCracker uncovers hidden data inside files using brute-force utility",
+      "project_url": "",
+      "install_commands": [
+        "pip3 install stegcracker && pip3 install stegcracker -U --force-reinstall"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": true,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "steganography.StegoCracker",
+      "class_name": "StegoCracker",
+      "category": "steganography",
+      "title": "StegoCracker",
+      "description": "StegoCracker lets you hide and retrieve data in image or audio files",
+      "project_url": "https://github.com/W1LDN16H7/StegoCracker",
+      "install_commands": [
+        "git clone https://github.com/W1LDN16H7/StegoCracker.git",
+        "sudo chmod -R 755 StegoCracker"
+      ],
+      "run_commands": [
+        "cd StegoCracker && python3 -m pip install -r requirements.txt",
+        "./install.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "steganography.Whitespace",
+      "class_name": "Whitespace",
+      "category": "steganography",
+      "title": "Whitespace",
+      "description": "Use whitespace and unicode characters for steganography",
+      "project_url": "https://github.com/beardog108/snow10",
+      "install_commands": [
+        "git clone https://github.com/beardog108/snow10.git",
+        "sudo chmod -R 755 snow10"
+      ],
+      "run_commands": [
+        "cd snow10 && ./install.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "web_attack.Web2Attack",
+      "class_name": "Web2Attack",
+      "category": "web_attack",
+      "title": "Web2Attack",
+      "description": "Web hacking framework with tools, exploits by python",
+      "project_url": "https://github.com/santatic/web2attack",
+      "install_commands": [
+        "git clone https://github.com/santatic/web2attack.git"
+      ],
+      "run_commands": [
+        "cd web2attack && sudo python3 w2aconsole"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "web_attack.Skipfish",
+      "class_name": "Skipfish",
+      "category": "web_attack",
+      "title": "Skipfish",
+      "description": "Skipfish – Fully automated, active web application security reconnaissance tool \n Usage: skipfish -o [FolderName] targetip/site",
+      "project_url": "",
+      "install_commands": [],
+      "run_commands": [
+        "sudo skipfish -h",
+        "echo \"skipfish -o [FolderName] targetip/site\"|boxes -d headline | lolcat"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": false,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "web_attack.SubDomainFinder",
+      "class_name": "SubDomainFinder",
+      "category": "web_attack",
+      "title": "SubDomain Finder",
+      "description": "Sublist3r is a python tool designed to enumerate subdomains of websites using OSINT \n Usage:\n\t[1] python3 sublist3r.py -d example.com \n[2] python3 sublist3r.py -d example.com -p 80,443",
+      "project_url": "https://github.com/aboul3la/Sublist3r",
+      "install_commands": [
+        "sudo pip3 install requests argparse dnspython",
+        "git clone https://github.com/aboul3la/Sublist3r.git",
+        "cd Sublist3r && sudo pip3 install -r requirements.txt"
+      ],
+      "run_commands": [
+        "cd Sublist3r && python3 sublist3r.py -h"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "web_attack.CheckURL",
+      "class_name": "CheckURL",
+      "category": "web_attack",
+      "title": "CheckURL",
+      "description": "Detect evil urls that uses IDN Homograph Attack.\n\t[!] python3 checkURL.py --url google.com",
+      "project_url": "https://github.com/UndeadSec/checkURL",
+      "install_commands": [
+        "git clone https://github.com/UndeadSec/checkURL.git"
+      ],
+      "run_commands": [
+        "cd checkURL && python3 checkURL.py --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "web_attack.Blazy",
+      "class_name": "Blazy",
+      "category": "web_attack",
+      "title": "Blazy(Also Find ClickJacking)",
+      "description": "Blazy is a modern login page bruteforcer",
+      "project_url": "https://github.com/UltimateHackers/Blazy",
+      "install_commands": [],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": true,
+      "archived_reason": "Python 2 only (pip2.7/python2.7). Repo archived/unmaintained.",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": false,
+        "runnable": false,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "web_attack.SubDomainTakeOver",
+      "class_name": "SubDomainTakeOver",
+      "category": "web_attack",
+      "title": "Sub-Domain TakeOver",
+      "description": "Sub-domain takeover vulnerability occur when a sub-domain \n (subdomain.example.com) is pointing to a service (e.g: GitHub, AWS/S3,..)\nthat has been removed or deleted.\nUsage:python3 takeover.py -d www.domain.com -v",
+      "project_url": "https://github.com/edoardottt/takeover",
+      "install_commands": [
+        "git clone https://github.com/edoardottt/takeover.git",
+        "cd takeover && pip install --user ."
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": false,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "web_attack.Dirb",
+      "class_name": "Dirb",
+      "category": "web_attack",
+      "title": "Dirb",
+      "description": "DIRB is a Web Content Scanner. It looks for existing (and/or hidden) Web Objects.\nIt basically works by launching a dictionary based attack against \n a web server and analyzing the response.",
+      "project_url": "https://gitlab.com/kalilinux/packages/dirb",
+      "install_commands": [
+        "git clone https://gitlab.com/kalilinux/packages/dirb.git",
+        "cd dirb;sudo bash configure;make"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "web_attack.Nuclei",
+      "class_name": "Nuclei",
+      "category": "web_attack",
+      "title": "Nuclei (Vulnerability Scanner)",
+      "description": "Fast, template-based vulnerability scanner used by 50k+ security teams.\nUsage: nuclei -u https://example.com",
+      "project_url": "https://github.com/projectdiscovery/nuclei",
+      "install_commands": [
+        "go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest",
+        "nuclei -update-templates"
+      ],
+      "run_commands": [
+        "nuclei -h"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "web_attack.Ffuf",
+      "class_name": "Ffuf",
+      "category": "web_attack",
+      "title": "ffuf (Web Fuzzer)",
+      "description": "Fast web fuzzer — content discovery, parameter fuzzing, vhost discovery.\nUsage: ffuf -w wordlist.txt -u https://example.com/FUZZ",
+      "project_url": "https://github.com/ffuf/ffuf",
+      "install_commands": [
+        "go install -v github.com/ffuf/ffuf/v2@latest"
+      ],
+      "run_commands": [
+        "ffuf -h"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": true,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "web_attack.Feroxbuster",
+      "class_name": "Feroxbuster",
+      "category": "web_attack",
+      "title": "Feroxbuster (Directory Brute Force)",
+      "description": "Fast, recursive content discovery tool written in Rust.\nUsage: feroxbuster -u https://example.com -w wordlist.txt",
+      "project_url": "https://github.com/epi052/feroxbuster",
+      "install_commands": [
+        "curl -sL https://raw.githubusercontent.com/epi052/feroxbuster/main/install-nix.sh | sudo bash -s /usr/local/bin"
+      ],
+      "run_commands": [
+        "feroxbuster -h"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": true,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "web_attack.Nikto",
+      "class_name": "Nikto",
+      "category": "web_attack",
+      "title": "Nikto (Web Server Scanner)",
+      "description": "Scan web servers for dangerous files, outdated software, misconfigurations.\nUsage: nikto -h https://example.com",
+      "project_url": "https://github.com/sullo/nikto",
+      "install_commands": [
+        "sudo apt-get install -y nikto"
+      ],
+      "run_commands": [
+        "nikto -Help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "web_attack.Wafw00f",
+      "class_name": "Wafw00f",
+      "category": "web_attack",
+      "title": "wafw00f (WAF Detector)",
+      "description": "Fingerprint and identify Web Application Firewalls (WAF).\nUsage: wafw00f https://example.com",
+      "project_url": "https://github.com/EnableSecurity/wafw00f",
+      "install_commands": [
+        "git clone https://github.com/EnableSecurity/wafw00f.git",
+        "cd wafw00f && pip install --user ."
+      ],
+      "run_commands": [
+        "wafw00f --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "web_attack.Katana",
+      "class_name": "Katana",
+      "category": "web_attack",
+      "title": "Katana (Web Crawler)",
+      "description": "Next-generation crawling and spidering framework from ProjectDiscovery.\nUsage: katana -u https://example.com",
+      "project_url": "https://github.com/projectdiscovery/katana",
+      "install_commands": [
+        "go install -v github.com/projectdiscovery/katana/cmd/katana@latest"
+      ],
+      "run_commands": [
+        "katana -h"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "web_attack.Gobuster",
+      "class_name": "Gobuster",
+      "category": "web_attack",
+      "title": "Gobuster (Dir/DNS/Vhost Brute Force)",
+      "description": "Directory/file, DNS, and vhost brute-forcing tool written in Go.",
+      "project_url": "https://github.com/OJ/gobuster",
+      "install_commands": [
+        "go install github.com/OJ/gobuster/v3@latest"
+      ],
+      "run_commands": [
+        "gobuster --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "web_attack.Dirsearch",
+      "class_name": "Dirsearch",
+      "category": "web_attack",
+      "title": "Dirsearch (Web Path Discovery)",
+      "description": "Web path brute-forcing tool for discovering directories and files on web servers.",
+      "project_url": "https://github.com/maurosoria/dirsearch",
+      "install_commands": [
+        "pip install --user dirsearch"
+      ],
+      "run_commands": [
+        "dirsearch --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "web_attack.OwaspZap",
+      "class_name": "OwaspZap",
+      "category": "web_attack",
+      "title": "OWASP ZAP (Web App Scanner)",
+      "description": "Full-featured web application security scanner — proxy, spider, fuzzer, scanner.",
+      "project_url": "https://github.com/zaproxy/zaproxy",
+      "install_commands": [
+        "sudo apt-get install -y zaproxy"
+      ],
+      "run_commands": [
+        "zaproxy --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": true,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "web_attack.TestSSL",
+      "class_name": "TestSSL",
+      "category": "web_attack",
+      "title": "testssl.sh (TLS/SSL Checker)",
+      "description": "Check TLS/SSL ciphers, protocols, and cryptographic flaws on any port.",
+      "project_url": "https://github.com/drwetter/testssl.sh",
+      "install_commands": [
+        "git clone https://github.com/drwetter/testssl.sh.git"
+      ],
+      "run_commands": [
+        "cd testssl.sh && ./testssl.sh --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "web_attack.Arjun",
+      "class_name": "Arjun",
+      "category": "web_attack",
+      "title": "Arjun (HTTP Parameter Discovery)",
+      "description": "HTTP parameter discovery suite that finds hidden GET/POST parameters.",
+      "project_url": "https://github.com/s0md3v/Arjun",
+      "install_commands": [
+        "pip install --user arjun"
+      ],
+      "run_commands": [
+        "arjun --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "web_attack.Caido",
+      "class_name": "Caido",
+      "category": "web_attack",
+      "title": "Caido (Web Security Auditing)",
+      "description": "Lightweight, modern web security auditing toolkit — Burp Suite alternative written in Rust.",
+      "project_url": "https://github.com/caido/caido",
+      "install_commands": [
+        "curl -sSL https://caido.download/releases/latest/caido-cli-linux-x86_64.tar.gz | sudo tar xz -C /usr/local/bin"
+      ],
+      "run_commands": [
+        "caido --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "web_attack.Mitmproxy",
+      "class_name": "Mitmproxy",
+      "category": "web_attack",
+      "title": "mitmproxy (Intercepting Proxy)",
+      "description": "Interactive TLS-capable intercepting HTTP proxy for pentesters and developers.",
+      "project_url": "https://github.com/mitmproxy/mitmproxy",
+      "install_commands": [
+        "pip install --user mitmproxy"
+      ],
+      "run_commands": [
+        "mitmproxy --version"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "wireless_attack.WIFIPumpkin",
+      "class_name": "WIFIPumpkin",
+      "category": "wireless_attack",
+      "title": "WiFi-Pumpkin",
+      "description": "The WiFi-Pumpkin is a rogue AP framework to easily create fake networks\nwhile forwarding legitimate traffic to and from the unsuspecting target.",
+      "project_url": "https://github.com/P0cL4bs/wifipumpkin3",
+      "install_commands": [
+        "sudo apt install -y libssl-dev libffi-dev build-essential python3-pyqt5",
+        "git clone https://github.com/P0cL4bs/wifipumpkin3.git",
+        "chmod -R 755 wifipumpkin3",
+        "cd wifipumpkin3 && pip install --user ."
+      ],
+      "run_commands": [
+        "sudo wifipumpkin3"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": true,
+        "requires_hardware": true,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "wireless_attack.pixiewps",
+      "class_name": "pixiewps",
+      "category": "wireless_attack",
+      "title": "pixiewps",
+      "description": "Pixiewps is a tool written in C used to bruteforce offline the WPS pin\nexploiting the low or non-existing entropy of some Access Points (pixie dust attack).",
+      "project_url": "https://github.com/wiire/pixiewps",
+      "install_commands": [
+        "git clone https://github.com/wiire/pixiewps.git && apt-get -y install build-essential",
+        "cd pixiewps && make",
+        "cd pixiewps && sudo make install"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": true,
+        "requires_hardware": true,
+        "long_running": true,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "wireless_attack.BluePot",
+      "class_name": "BluePot",
+      "category": "wireless_attack",
+      "title": "Bluetooth Honeypot GUI Framework",
+      "description": "You need at least 1 bluetooth receiver.\nInstall libbluetooth-dev (Ubuntu) / bluez-libs-devel (Fedora) / bluez-devel (openSUSE).",
+      "project_url": "https://github.com/andrewmichaelsmith/bluepot",
+      "install_commands": [
+        "sudo wget https://raw.githubusercontent.com/andrewmichaelsmith/bluepot/master/bin/bluepot-0.2.tar.gz",
+        "sudo tar xfz bluepot-0.2.tar.gz && sudo rm bluepot-0.2.tar.gz"
+      ],
+      "run_commands": [
+        "cd bluepot && sudo java -jar bluepot.jar"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": true,
+        "requires_hardware": true,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "wireless_attack.Fluxion",
+      "class_name": "Fluxion",
+      "category": "wireless_attack",
+      "title": "Fluxion",
+      "description": "Fluxion is a remake of linset by vk496 with enhanced functionality.",
+      "project_url": "https://github.com/FluxionNetwork/fluxion",
+      "install_commands": [
+        "git clone https://github.com/FluxionNetwork/fluxion.git",
+        "cd fluxion && chmod +x fluxion.sh"
+      ],
+      "run_commands": [
+        "cd fluxion && sudo bash fluxion.sh -i"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": true,
+        "requires_hardware": true,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "wireless_attack.Wifiphisher",
+      "class_name": "Wifiphisher",
+      "category": "wireless_attack",
+      "title": "Wifiphisher",
+      "description": "Wifiphisher is a rogue Access Point framework for conducting red team engagements\nor Wi-Fi security testing. Easily achieve man-in-the-middle position against\nwireless clients by performing targeted Wi-Fi association attacks.",
+      "project_url": "https://github.com/wifiphisher/wifiphisher",
+      "install_commands": [
+        "git clone https://github.com/wifiphisher/wifiphisher.git",
+        "cd wifiphisher && pip install --user ."
+      ],
+      "run_commands": [
+        "cd wifiphisher && sudo wifiphisher"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": true,
+        "requires_hardware": true,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "wireless_attack.Wifite",
+      "class_name": "Wifite",
+      "category": "wireless_attack",
+      "title": "Wifite",
+      "description": "Wifite is an automated wireless attack tool.",
+      "project_url": "https://github.com/derv82/wifite2",
+      "install_commands": [
+        "git clone https://github.com/derv82/wifite2.git",
+        "cd wifite2 && pip install --user ."
+      ],
+      "run_commands": [
+        "sudo wifite"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": true,
+        "requires_hardware": true,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "wireless_attack.EvilTwin",
+      "class_name": "EvilTwin",
+      "category": "wireless_attack",
+      "title": "EvilTwin",
+      "description": "Fakeap — perform Evil Twin Attack by getting credentials using a Fake page and Fake Access Point.",
+      "project_url": "https://github.com/Z4nzu/fakeap",
+      "install_commands": [
+        "git clone https://github.com/Z4nzu/fakeap.git"
+      ],
+      "run_commands": [
+        "cd fakeap && sudo bash fakeap.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": true,
+        "requires_hardware": true,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "wireless_attack.Fastssh",
+      "class_name": "Fastssh",
+      "category": "wireless_attack",
+      "title": "Fastssh",
+      "description": "Fastssh — multi-threaded scan and brute force attack against SSH protocol\nusing the most commonly used credentials.",
+      "project_url": "https://github.com/Z4nzu/fastssh",
+      "install_commands": [
+        "git clone https://github.com/Z4nzu/fastssh.git && cd fastssh && chmod +x fastssh.sh",
+        "sudo apt-get install -y sshpass netcat"
+      ],
+      "run_commands": [
+        "cd fastssh && sudo bash fastssh.sh --scan"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": true,
+        "requires_hardware": true,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "wireless_attack.Howmanypeople",
+      "class_name": "Howmanypeople",
+      "category": "wireless_attack",
+      "title": "Howmanypeople",
+      "description": "Count the number of people around you by monitoring wifi signals.\n[@] WIFI ADAPTER REQUIRED\n[*] It may be illegal to monitor networks for MAC addresses on networks you do not own.",
+      "project_url": "",
+      "install_commands": [
+        "sudo apt-get install -y tshark",
+        "sudo python3 -m pip install howmanypeoplearearound"
+      ],
+      "run_commands": [
+        "howmanypeoplearearound"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": true,
+        "requires_hardware": true,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "wireless_attack.Airgeddon",
+      "class_name": "Airgeddon",
+      "category": "wireless_attack",
+      "title": "Airgeddon (Wireless Attack Suite)",
+      "description": "Multi-use bash script for auditing wireless networks.\nCovers WPA/WPA2, WEP, WPS, PMKID, evil twin, handshake capture and more.",
+      "project_url": "https://github.com/v1s1t0r1sh3r3/airgeddon",
+      "install_commands": [
+        "git clone https://github.com/v1s1t0r1sh3r3/airgeddon.git"
+      ],
+      "run_commands": [
+        "cd airgeddon && sudo bash airgeddon.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": true,
+        "requires_hardware": true,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "wireless_attack.Hcxdumptool",
+      "class_name": "Hcxdumptool",
+      "category": "wireless_attack",
+      "title": "hcxdumptool (PMKID Capture)",
+      "description": "Capture packets and PMKID hashes from WLAN devices.\nUsage: hcxdumptool -i <iface> -o capture.pcapng --enable_status=1",
+      "project_url": "https://github.com/ZerBea/hcxdumptool",
+      "install_commands": [
+        "git clone https://github.com/ZerBea/hcxdumptool.git",
+        "cd hcxdumptool && make && sudo make install"
+      ],
+      "run_commands": [
+        "hcxdumptool --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": true,
+        "requires_hardware": true,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "wireless_attack.Hcxtools",
+      "class_name": "Hcxtools",
+      "category": "wireless_attack",
+      "title": "hcxtools (PMKID/Hash Conversion)",
+      "description": "Convert captured WLAN packets to hashcat/JtR-compatible format.\nUsage: hcxpcapngtool -o hashes.txt capture.pcapng",
+      "project_url": "https://github.com/ZerBea/hcxtools",
+      "install_commands": [
+        "git clone https://github.com/ZerBea/hcxtools.git",
+        "cd hcxtools && make && sudo make install"
+      ],
+      "run_commands": [
+        "hcxpcapngtool --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": true,
+        "requires_hardware": true,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "wireless_attack.Bettercap",
+      "class_name": "Bettercap",
+      "category": "wireless_attack",
+      "title": "Bettercap (Network/WiFi/BLE MITM)",
+      "description": "Swiss army knife for WiFi, BLE, HID, and Ethernet network recon and MITM attacks.",
+      "project_url": "https://github.com/bettercap/bettercap",
+      "install_commands": [
+        "sudo apt-get install -y bettercap"
+      ],
+      "run_commands": [
+        "sudo bettercap --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": true,
+        "requires_hardware": true,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "wordlist_generator.Cupp",
+      "class_name": "Cupp",
+      "category": "wordlist_generator",
+      "title": "Cupp",
+      "description": "Common User Passwords Profiler — generates personalized wordlists based on target info.",
+      "project_url": "https://github.com/Mebus/cupp",
+      "install_commands": [
+        "git clone https://github.com/Mebus/cupp.git"
+      ],
+      "run_commands": [
+        "cd cupp && python3 cupp.py -i"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": true,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "wordlist_generator.WlCreator",
+      "class_name": "WlCreator",
+      "category": "wordlist_generator",
+      "title": "WordlistCreator",
+      "description": "WlCreator is a C program that can create all possibilities of passwords,\n and you can choose Length, Lowercase, Capital, Numbers and Special Chars",
+      "project_url": "https://github.com/Z4nzu/wlcreator",
+      "install_commands": [
+        "git clone https://github.com/Z4nzu/wlcreator.git"
+      ],
+      "run_commands": [
+        "cd wlcreator && sudo gcc -o wlcreator wlcreator.c && ./wlcreator 5"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": true,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "wordlist_generator.GoblinWordGenerator",
+      "class_name": "GoblinWordGenerator",
+      "category": "wordlist_generator",
+      "title": "Goblin WordGenerator",
+      "description": "Goblin WordGenerator",
+      "project_url": "https://github.com/UndeadSec/GoblinWordGenerator.git",
+      "install_commands": [
+        "git clone https://github.com/UndeadSec/GoblinWordGenerator.git"
+      ],
+      "run_commands": [
+        "cd GoblinWordGenerator && python3 goblin.py"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": true,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "wordlist_generator.showme",
+      "class_name": "showme",
+      "category": "wordlist_generator",
+      "title": "Password list (1.4 Billion Clear Text Password)",
+      "description": "This tool allows you to perform OSINT and reconnaissance on an organisation or an individual. It allows one to search 1.4 Billion clear text credentials which was dumped as part of BreachCompilation leak. This database makes finding passwords faster and easier than ever before.",
+      "project_url": "https://github.com/Viralmaniar/SMWYG-Show-Me-What-You-Got",
+      "install_commands": [
+        "git clone https://github.com/Viralmaniar/SMWYG-Show-Me-What-You-Got.git",
+        "cd SMWYG-Show-Me-What-You-Got && pip3 install -r requirements.txt"
+      ],
+      "run_commands": [
+        "cd SMWYG-Show-Me-What-You-Got && python SMWYG.py"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": true,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "wordlist_generator.Hashcat",
+      "class_name": "Hashcat",
+      "category": "wordlist_generator",
+      "title": "Hashcat (Password Cracker)",
+      "description": "World's fastest GPU/CPU password recovery tool — supports 300+ hash types.\nUsage: hashcat -m 0 -a 0 hashes.txt wordlist.txt",
+      "project_url": "https://github.com/hashcat/hashcat",
+      "install_commands": [
+        "sudo apt-get install -y hashcat"
+      ],
+      "run_commands": [
+        "hashcat --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": true,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "wordlist_generator.JohnTheRipper",
+      "class_name": "JohnTheRipper",
+      "category": "wordlist_generator",
+      "title": "John the Ripper",
+      "description": "Open-source password security auditing and recovery tool.\nUsage: john --wordlist=wordlist.txt hashfile",
+      "project_url": "https://github.com/openwall/john",
+      "install_commands": [
+        "sudo apt-get install -y john"
+      ],
+      "run_commands": [
+        "john --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": true,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "wordlist_generator.Haiti",
+      "class_name": "Haiti",
+      "category": "wordlist_generator",
+      "title": "haiti (Hash Type Identifier)",
+      "description": "Identify hash types — supports 300+ algorithms.\nUsage: haiti <hash>",
+      "project_url": "https://github.com/noraj/haiti",
+      "install_commands": [
+        "gem install haiti-hash"
+      ],
+      "run_commands": [
+        "haiti --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": true,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "xss_attack.Dalfox",
+      "class_name": "Dalfox",
+      "category": "xss_attack",
+      "title": "DalFox (Finder of XSS)",
+      "description": "XSS Scanning and Parameter Analysis tool.",
+      "project_url": "https://github.com/hahwul/dalfox",
+      "install_commands": [
+        "sudo apt-get install -y golang",
+        "go install github.com/hahwul/dalfox/v2@latest"
+      ],
+      "run_commands": [
+        "~/go/bin/dalfox --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "xss_attack.XSSPayloadGenerator",
+      "class_name": "XSSPayloadGenerator",
+      "category": "xss_attack",
+      "title": "XSS Payload Generator",
+      "description": "XSS PAYLOAD GENERATOR - XSS SCANNER - XSS DORK FINDER",
+      "project_url": "https://github.com/capture0x/XSS-LOADER.git",
+      "install_commands": [
+        "git clone https://github.com/capture0x/XSS-LOADER.git",
+        "cd XSS-LOADER;sudo pip3 install -r requirements.txt"
+      ],
+      "run_commands": [
+        "cd XSS-LOADER;sudo python3 payloader.py"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "xss_attack.XSSFinder",
+      "class_name": "XSSFinder",
+      "category": "xss_attack",
+      "title": "Extended XSS Searcher and Finder",
+      "description": "Extended XSS Searcher and Finder",
+      "project_url": "https://github.com/Damian89/extended-xss-search",
+      "install_commands": [
+        "git clone https://github.com/Damian89/extended-xss-search.git"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "xss_attack.XSSFreak",
+      "class_name": "XSSFreak",
+      "category": "xss_attack",
+      "title": "XSS-Freak",
+      "description": "An XSS scanner fully written in Python 3 from scratch.",
+      "project_url": "https://github.com/PR0PH3CY33/XSS-Freak",
+      "install_commands": [
+        "git clone https://github.com/PR0PH3CY33/XSS-Freak.git",
+        "cd XSS-Freak;sudo pip3 install -r requirements.txt"
+      ],
+      "run_commands": [
+        "cd XSS-Freak;sudo python3 XSS-Freak.py"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "xss_attack.XSpear",
+      "class_name": "XSpear",
+      "category": "xss_attack",
+      "title": "XSpear",
+      "description": "XSpear is an XSS Scanner built on Ruby Gems.",
+      "project_url": "https://github.com/hahwul/XSpear",
+      "install_commands": [
+        "gem install XSpear"
+      ],
+      "run_commands": [
+        "XSpear -h"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "xss_attack.XSSCon",
+      "class_name": "XSSCon",
+      "category": "xss_attack",
+      "title": "XSSCon",
+      "description": "",
+      "project_url": "https://github.com/menkrep1337/XSSCon",
+      "install_commands": [
+        "git clone https://github.com/menkrep1337/XSSCon.git",
+        "sudo chmod 755 -R XSSCon"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "xss_attack.XanXSS",
+      "class_name": "XanXSS",
+      "category": "xss_attack",
+      "title": "XanXSS",
+      "description": "Reflected XSS searching tool that creates payloads from templates.",
+      "project_url": "https://github.com/Ekultek/XanXSS",
+      "install_commands": [
+        "git clone https://github.com/Ekultek/XanXSS.git"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "xss_attack.XSSStrike",
+      "class_name": "XSSStrike",
+      "category": "xss_attack",
+      "title": "Advanced XSS Detection Suite",
+      "description": "XSStrike is a Python-based tool designed to detect and exploit XSS vulnerabilities.",
+      "project_url": "https://github.com/UltimateHackers/XSStrike",
+      "install_commands": [
+        "sudo rm -rf XSStrike",
+        "git clone https://github.com/UltimateHackers/XSStrike.git && cd XSStrike && pip install -r requirements.txt"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": false,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "xss_attack.RVuln",
+      "class_name": "RVuln",
+      "category": "xss_attack",
+      "title": "RVuln",
+      "description": "Multi-threaded and Automated Web Vulnerability Scanner written in Rust.",
+      "project_url": "https://github.com/iinc0gnit0/RVuln",
+      "install_commands": [
+        "git clone https://github.com/iinc0gnit0/RVuln.git;curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh;source $HOME/.cargo/env;sudo apt install librust-openssl-dev;cd RVuln;sudo su;cargo build --release;mv target/release/RVuln"
+      ],
+      "run_commands": [
+        "RVuln"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "android_attack.Keydroid",
+      "class_name": "Keydroid",
+      "category": "android_attack",
+      "title": "Keydroid",
+      "description": "Android Keylogger + Reverse Shell\n[!] You have to install Some Manually Refer Below Link:\n [+] https://github.com/F4dl0/keydroid",
+      "project_url": "https://github.com/F4dl0/keydroid",
+      "install_commands": [
+        "git clone https://github.com/F4dl0/keydroid.git"
+      ],
+      "run_commands": [
+        "cd keydroid && bash keydroid.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "android_attack.MySMS",
+      "class_name": "MySMS",
+      "category": "android_attack",
+      "title": "MySMS",
+      "description": "Script that generates an Android App to hack SMS through WAN \n[!] You have to install Some Manually Refer Below Link:\n\t [+] https://github.com/papusingh2sms/mysms",
+      "project_url": "https://github.com/papusingh2sms/mysms",
+      "install_commands": [
+        "git clone https://github.com/papusingh2sms/mysms.git"
+      ],
+      "run_commands": [
+        "cd mysms && bash mysms.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "android_attack.LockPhish",
+      "class_name": "LockPhish",
+      "category": "android_attack",
+      "title": "Lockphish (Grab target LOCK PIN)",
+      "description": "Lockphish it's the first tool for phishing attacks on the lock screen, designed to\n Grab Windows credentials,Android PIN and iPhone Passcode using a https link.",
+      "project_url": "https://github.com/JasonJerry/lockphish",
+      "install_commands": [
+        "git clone https://github.com/JasonJerry/lockphish.git"
+      ],
+      "run_commands": [
+        "cd lockphish && bash lockphish.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "android_attack.Droidcam",
+      "class_name": "Droidcam",
+      "category": "android_attack",
+      "title": "DroidCam (Capture Image)",
+      "description": "Powerful Tool For Grab Front Camera Snap Using A Link",
+      "project_url": "https://github.com/kinghacker0/WishFish",
+      "install_commands": [
+        "git clone https://github.com/kinghacker0/WishFish.git",
+        "sudo apt install -y php wget openssh-client"
+      ],
+      "run_commands": [
+        "cd WishFish && sudo bash wishfish.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "android_attack.EvilApp",
+      "class_name": "EvilApp",
+      "category": "android_attack",
+      "title": "EvilApp (Hijack Session)",
+      "description": "EvilApp is a script to generate Android App that can hijack authenticated sessions in cookies.",
+      "project_url": "https://github.com/crypticterminal/EvilApp",
+      "install_commands": [
+        "git clone https://github.com/crypticterminal/EvilApp.git"
+      ],
+      "run_commands": [
+        "cd EvilApp && bash evilapp.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "email_verifier.KnockMail",
+      "class_name": "KnockMail",
+      "category": "email_verifier",
+      "title": "Knockmail",
+      "description": "KnockMail Tool Verify If Email Exists",
+      "project_url": "https://github.com/heywoodlh/KnockMail",
+      "install_commands": [
+        "git clone https://github.com/heywoodlh/KnockMail.git",
+        "cd KnockMail;sudo pip3 install -r requirements.txt"
+      ],
+      "run_commands": [
+        "cd KnockMail;python3 knockmail.py"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "hash_crack.HashBuster",
+      "class_name": "HashBuster",
+      "category": "hash_crack",
+      "title": "Hash Buster",
+      "description": "Features: \n Automatic hash type identification \n Supports MD5, SHA1, SHA256, SHA384, SHA512",
+      "project_url": "https://github.com/s0md3v/Hash-Buster",
+      "install_commands": [
+        "git clone https://github.com/s0md3v/Hash-Buster.git",
+        "cd Hash-Buster;make install"
+      ],
+      "run_commands": [
+        "buster -h"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "homograph_attacks.EvilURL",
+      "class_name": "EvilURL",
+      "category": "homograph_attacks",
+      "title": "EvilURL",
+      "description": "Generate unicode evil domains for IDN Homograph Attack and detect them.",
+      "project_url": "https://github.com/UndeadSec/EvilURL",
+      "install_commands": [
+        "git clone https://github.com/UndeadSec/EvilURL.git"
+      ],
+      "run_commands": [
+        "cd EvilURL;python3 evilurl.py"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "mix_tools.TerminalMultiplexer",
+      "class_name": "TerminalMultiplexer",
+      "category": "mix_tools",
+      "title": "Terminal Multiplexer",
+      "description": "Terminal Multiplexer (tilix) is a tiling terminal emulator that allows opening several terminal sessions inside one window.",
+      "project_url": "",
+      "install_commands": [
+        "sudo apt-get install -y tilix"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": false,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "mix_tools.Crivo",
+      "class_name": "Crivo",
+      "category": "mix_tools",
+      "title": "Crivo",
+      "description": "A tool for extracting and filtering URLs, IPs, domains, and subdomains\nfrom web pages or text, with built-in web scraping capabilities.\nSee: python3 crivo_cli.py -h",
+      "project_url": "https://github.com/GMDSantana/crivo",
+      "install_commands": [
+        "git clone https://github.com/GMDSantana/crivo.git",
+        "cd crivo && pip install --user -r requirements.txt"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": false,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "payload_injection.DebInject",
+      "class_name": "DebInject",
+      "category": "payload_injection",
+      "title": "Debinject",
+      "description": "Debinject is a tool that inject malicious code into *.debs",
+      "project_url": "https://github.com/UndeadSec/Debinject",
+      "install_commands": [
+        "git clone https://github.com/UndeadSec/Debinject.git"
+      ],
+      "run_commands": [
+        "cd Debinject;python debinject.py"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": true
+      }
+    },
+    {
+      "id": "payload_injection.Pixload",
+      "class_name": "Pixload",
+      "category": "payload_injection",
+      "title": "Pixload",
+      "description": "Pixload -- Image Payload Creating tools \n Pixload is Set of tools for creating/injecting payload into images.",
+      "project_url": "https://github.com/chinarulezzz/pixload",
+      "install_commands": [
+        "sudo apt install libgd-perl libimage-exiftool-perl libstring-crc32-perl",
+        "git clone https://github.com/chinarulezzz/pixload.git"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": false,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "socialmedia.InstaBrute",
+      "class_name": "InstaBrute",
+      "category": "socialmedia",
+      "title": "Instagram Attack",
+      "description": "Brute force attack against Instagram",
+      "project_url": "https://github.com/chinoogawa/instaBrute",
+      "install_commands": [],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": true,
+      "archived_reason": "Python 2 only — EOL January 2020. Repo unmaintained since 2017.",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": false,
+        "runnable": false,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "socialmedia.BruteForce",
+      "class_name": "BruteForce",
+      "category": "socialmedia",
+      "title": "AllinOne SocialMedia Attack",
+      "description": "Brute_Force_Attack Gmail Hotmail Twitter Facebook Netflix \n[!] python3 Brute_Force.py -g <Account@gmail.com> -l <File_list>",
+      "project_url": "https://github.com/Matrix07ksa/Brute_Force",
+      "install_commands": [
+        "git clone https://github.com/Matrix07ksa/Brute_Force.git",
+        "cd Brute_Force;sudo pip3 install proxylist;pip3 install mechanize"
+      ],
+      "run_commands": [
+        "cd Brute_Force;python3 Brute_Force.py -h"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "socialmedia.Faceshell",
+      "class_name": "Faceshell",
+      "category": "socialmedia",
+      "title": "Facebook Attack",
+      "description": "Facebook BruteForcer",
+      "project_url": "https://github.com/Matrix07ksa/Brute_Force",
+      "install_commands": [
+        "git clone https://github.com/Matrix07ksa/Brute_Force.git",
+        "cd Brute_Force;sudo pip3 install proxylist;pip3 install mechanize"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "socialmedia.AppCheck",
+      "class_name": "AppCheck",
+      "category": "socialmedia",
+      "title": "Application Checker",
+      "description": "Tool to check if an app is installed on the target device through a link.",
+      "project_url": "https://github.com/jakuta-tech/underhanded",
+      "install_commands": [
+        "git clone https://github.com/jakuta-tech/underhanded.git",
+        "cd underhanded && sudo chmod +x underhanded.sh"
+      ],
+      "run_commands": [
+        "cd underhanded;sudo bash underhanded.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "socialmedia_finder.FacialFind",
+      "class_name": "FacialFind",
+      "category": "socialmedia_finder",
+      "title": "Find SocialMedia By Facial Recognation System",
+      "description": "A Social Media Mapping Tool that correlates profiles\n via facial recognition across different sites.",
+      "project_url": "https://github.com/Greenwolf/social_mapper",
+      "install_commands": [
+        "sudo apt install -y software-properties-common",
+        "sudo add-apt-repository ppa:mozillateam/firefox-next && sudo apt update && sudo apt upgrade",
+        "git clone https://github.com/Greenwolf/social_mapper.git",
+        "sudo apt install -y build-essential cmake libgtk-3-dev libboost-all-dev",
+        "cd social_mapper/setup",
+        "sudo python3 -m pip install --no-cache-dir -r requirements.txt",
+        "echo \"[!]Now You have To do some Manually\n[!] Install the Geckodriver for your operating system\n[!] Copy & Paste Link And Download File As System Configuration\n[#] https://github.com/mozilla/geckodriver/releases\n[!!] On Linux you can place it in /usr/bin \"| boxes | lolcat"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "socialmedia_finder.FindUser",
+      "class_name": "FindUser",
+      "category": "socialmedia_finder",
+      "title": "Find SocialMedia By UserName",
+      "description": "Find usernames across over 75 social networks",
+      "project_url": "https://github.com/xHak9x/finduser",
+      "install_commands": [
+        "git clone https://github.com/xHak9x/finduser.git",
+        "cd finduser && sudo chmod +x finduser.sh"
+      ],
+      "run_commands": [
+        "cd finduser && sudo bash finduser.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "socialmedia_finder.Sherlock",
+      "class_name": "Sherlock",
+      "category": "socialmedia_finder",
+      "title": "Sherlock",
+      "description": "Hunt down social media accounts by username across social networks \n For More Usage \n\t >>python3 sherlock --help",
+      "project_url": "https://github.com/sherlock-project/sherlock",
+      "install_commands": [
+        "git clone https://github.com/sherlock-project/sherlock.git",
+        "cd sherlock;sudo python3 -m pip install -r requirements.txt"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "socialmedia_finder.SocialScan",
+      "class_name": "SocialScan",
+      "category": "socialmedia_finder",
+      "title": "SocialScan | Username or Email",
+      "description": "Check email address and username availability on online platforms with 100% accuracy",
+      "project_url": "https://github.com/iojw/socialscan",
+      "install_commands": [
+        "pip install --user socialscan"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": true,
+        "requires_sudo": false,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "web_crawling.GoSpider",
+      "class_name": "GoSpider",
+      "category": "web_crawling",
+      "title": "Gospider",
+      "description": "Gospider - Fast web spider written in Go",
+      "project_url": "https://github.com/jaeles-project/gospider",
+      "install_commands": [
+        "sudo go get -u github.com/jaeles-project/gospider"
+      ],
+      "run_commands": [],
+      "tags": [],
+      "supported_os": [
+        "linux",
+        "macos"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": false,
+        "requires_hardware": false,
+        "long_running": false,
+        "installable": true,
+        "runnable": false,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "wifi_jamming.WifiJammerNG",
+      "class_name": "WifiJammerNG",
+      "category": "wifi_jamming",
+      "title": "WifiJammer-NG",
+      "description": "Continuously jam all wifi clients and access points within range.",
+      "project_url": "https://github.com/MisterBianco/wifijammer-ng",
+      "install_commands": [
+        "git clone https://github.com/MisterBianco/wifijammer-ng.git",
+        "cd wifijammer-ng;pip install --user -r requirements.txt"
+      ],
+      "run_commands": [
+        "cd wifijammer-ng && sudo python3 wifijammer.py --help"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": true,
+        "requires_hardware": true,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    },
+    {
+      "id": "wifi_jamming.KawaiiDeauther",
+      "class_name": "KawaiiDeauther",
+      "category": "wifi_jamming",
+      "title": "KawaiiDeauther",
+      "description": "Kawaii Deauther is a pentest toolkit whose goal is to perform \n jam on WiFi clients/routers and spam many fake AP for testing purposes.",
+      "project_url": "https://github.com/aryanrtm/KawaiiDeauther",
+      "install_commands": [
+        "git clone https://github.com/aryanrtm/KawaiiDeauther.git",
+        "cd KawaiiDeauther;sudo bash install.sh"
+      ],
+      "run_commands": [
+        "cd KawaiiDeauther;sudo bash KawaiiDeauther.sh"
+      ],
+      "tags": [],
+      "supported_os": [
+        "linux"
+      ],
+      "archived": false,
+      "archived_reason": "",
+      "capabilities": {
+        "interactive": false,
+        "requires_sudo": true,
+        "requires_gui": false,
+        "requires_wifi": true,
+        "requires_hardware": true,
+        "long_running": false,
+        "installable": true,
+        "runnable": true,
+        "runnable_by_claude": false
+      }
+    }
+  ]
+}
