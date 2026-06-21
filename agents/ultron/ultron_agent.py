@@ -124,10 +124,38 @@ def _parse_nmap_voice(raw: str, target: str) -> str:
             if len(parts) >= 3 and parts[1] == "open":
                 open_ports.append(f"{parts[2]} ({parts[0]})")
     if not open_ports:
+        if "filtered" in raw.lower():
+            return (f"Nmap: all scanned ports on {target} are filtered (firewall / cloud "
+                    f"security-group dropping probes) — host may still serve HTTP; httpx confirms.")
         return f"Nmap found no open ports on {target}."
     ports_str = ", ".join(open_ports[:10])
     suffix = f" and {len(open_ports)-10} more" if len(open_ports) > 10 else ""
     return f"Nmap found {len(open_ports)} open port{'s' if len(open_ports)!=1 else ''} on {target}: {ports_str}{suffix}."
+
+
+def _resolve_scheme(target: str) -> str:
+    """Pick a scheme that actually responds for a bare host.
+
+    Bug-bounty/recon used to hardcode https:// — http-only targets (e.g. many
+    test/legacy hosts on port 80) then silently returned nothing, and the LLM
+    rationalised the empty result as 'low risk'. This probes https then http and
+    returns the first that answers (any HTTP status = reachable), defaulting to
+    https. Already-schemed targets pass through untouched.
+    """
+    if target.startswith(("http://", "https://")):
+        return target
+    import urllib.request
+    import urllib.error
+    for scheme in ("https", "http"):
+        url = f"{scheme}://{target}"
+        try:
+            urllib.request.urlopen(urllib.request.Request(url, method="HEAD"), timeout=6)
+            return url
+        except urllib.error.HTTPError:
+            return url            # server answered (4xx/5xx) -> scheme is live
+        except Exception:
+            continue              # connection failed -> try next scheme
+    return f"https://{target}"    # neither reachable -> default, pipeline flags inconclusive
 
 
 _SCAN_HISTORY_FILE = "data/scan_history.json"
@@ -882,14 +910,16 @@ class UltronAgent:
         sections["subfinder"] = sub_r.get("message", "Failed.")
         subdomains = sub_r.get("data", {}).get("subdomains", [])
 
-        # ── Stage 3: Httpx ──
+        # ── Stage 3: Httpx ── (resolve http/https, don't force https)
         print("[ULTRON] Stage 3/5: Httpx...")
-        httpx_r = self.httpx_probe(f"https://{target}")
+        base_url = _resolve_scheme(target)
+        httpx_r = self.httpx_probe(base_url)
         sections["httpx"] = httpx_r.get("message", "Failed.")
+        reachable = bool(httpx_r.get("data", {}).get("raw", "").strip())
 
         # ── Stage 4: Nuclei ──
         print("[ULTRON] Stage 4/5: Nuclei...")
-        nuclei_r = self.nuclei_scan(f"https://{target}")
+        nuclei_r = self.nuclei_scan(base_url)
         sections["nuclei"] = nuclei_r.get("data", {}).get("raw") or nuclei_r.get("message", "No findings.")
 
         # ── Stage 5: Katana ──
@@ -899,7 +929,7 @@ class UltronAgent:
         urls = katana_r.get("data", {}).get("urls", [])
 
         # ── Screenshot ──
-        shot_r = self.take_screenshot(f"https://{target}")
+        shot_r = self.take_screenshot(base_url)
         shot_path = shot_r.get("data", {}).get("path", "")
         sections["screenshot"] = shot_r.get("message", "Screenshot failed.")
 
@@ -939,16 +969,22 @@ Write a structured security assessment:
 8. Recommendations
 
 Technical, precise, actionable. No markdown # headers. Plain section labels.
-
+{"" if reachable else '''
+CRITICAL — INCONCLUSIVE: the HTTP probe returned NO response; the target was not reachable
+from this host. Treat all empty results as TOOL FAILURE, not safety. Set Risk Assessment to
+"Inconclusive - target unreachable" and advise re-running with egress to the target. Never rate Low.'''}
 Report:"""
 
         analysis = ask_llm(prompt, agent="ultron")
         analysis = _critic_refine(prompt, analysis, agent="ultron")  # Phase 57 (gated)
 
         # ── Build report ──
+        bb_banner = "" if reachable else (
+            "> **INCONCLUSIVE — target unreachable from scan host.** Empty results below mean the "
+            "scanners could not connect, not that the target is clean. Re-run with egress to target.\n\n")
         full_report = f"""# Ultron Full Pipeline Report: {target}
 
-**Target:** {target}
+{bb_banner}**Target:** {target}
 **Generated:** {date_str}
 **Pipeline:** Nmap → Subfinder → Httpx → Nuclei → Katana → Screenshot
 
@@ -1340,15 +1376,20 @@ Report:"""
         sub_result = self.subfinder(target)
         sections["subfinder"] = sub_result.get("message", "Failed.")
 
-        # ── Httpx ──
+        # ── Httpx ── (resolve http/https instead of forcing https)
         print("[ULTRON] Running Httpx...")
-        httpx_result = self.httpx_probe(f"https://{target}")
+        base_url = _resolve_scheme(target)
+        httpx_result = self.httpx_probe(base_url)
         sections["httpx"] = httpx_result.get("message", "Failed.")
 
         # ── Nuclei ──
         print("[ULTRON] Running Nuclei...")
-        nuclei_result = self.nuclei_scan(f"https://{target}")
+        nuclei_result = self.nuclei_scan(base_url)
         sections["nuclei"] = nuclei_result.get("message", "Failed.")
+
+        # Reachability gate: if httpx got NO response, the target wasn't actually
+        # assessed — empty nuclei/nmap then mean TOOL FAILURE, not a clean target.
+        reachable = bool(httpx_result.get("data", {}).get("raw", "").strip())
 
         # ── LLM Analysis ──
         print("[ULTRON] Analyzing with LLM...")
@@ -1382,16 +1423,24 @@ Write a structured report with:
 7. Recommendations
 
 Be technical, precise, and actionable. No markdown headers with #. Plain section labels.
-
+{"" if reachable else '''
+CRITICAL — SCAN INCONCLUSIVE: the HTTP probe returned NO response, so the target could
+not be reached or assessed from this host. Treat every empty result above as TOOL FAILURE,
+NOT evidence of safety. You MUST set Risk Assessment to "Inconclusive - target unreachable"
+and recommend re-running from a network with egress to the target. Do NOT rate it Low risk.'''}
 Report:"""
 
         analysis = ask_llm(prompt, agent="ultron")
         analysis = _critic_refine(prompt, analysis, agent="ultron")  # Phase 57 (gated)
 
         # ── Build full report ──
+        banner = "" if reachable else (
+            "> **SCAN INCONCLUSIVE — target unreachable from scan host.** Empty results below "
+            "mean the scanners could not connect, NOT that the target is secure. Re-run from a "
+            "network with egress to the target.\n\n")
         full_report = f"""# Ultron Security Report: {target}
 
-**Target:** {target}
+{banner}**Target:** {target}
 **Generated:** {date_str}
 
 ---
@@ -1423,7 +1472,8 @@ Report:"""
         saved_path = self.save_report(target, full_report)
         save_msg = f"Report saved: ultron_{target.replace('.', '_')}..." if saved_path else "Could not save report."
 
-        summary = (analysis or sections["nmap"])[:400] + "..."
+        prefix = "" if reachable else "[INCONCLUSIVE - target unreachable] "
+        summary = prefix + (analysis or sections["nmap"])[:400] + "..."
 
         return {
             "success": True,
