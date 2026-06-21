@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.env
+*.key
+*.pem
+# runtime state (regenerated)
+data/
+*.migrated
+test_report_*.html
+# …but the shipped assets stay tracked:
+!agents/ultron/hackingtool/data/
+!agents/ultron/hackingtool/data/tools.json

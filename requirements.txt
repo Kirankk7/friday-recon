@@ -1,0 +1,9 @@
+# friday-recon — slim deps (no voice/HUD/browser/torch). ~30MB install, no GPU.
+requests
+psutil
+python-dotenv
+markitdown
+beautifulsoup4
+lxml
+# Optional: python-nmap (nmap_scan via lib instead of CLI). Recon tool BINARIES
+# (nmap, subfinder, httpx, nuclei, katana) are external; install separately if wanted.
