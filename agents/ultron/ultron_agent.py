@@ -361,6 +361,27 @@ def _detect_features(urls: list, sections: dict) -> dict:
     }
 
 
+def _clean_site(target: str) -> str:
+    """Normalise a target into a tidy, filesystem-safe folder name.
+    Old reports encoded dots as underscores (testaspnet_vulnweb_com); convert those
+    back to a readable host, and strip Windows-invalid chars."""
+    t = re.sub(r"^https?://", "", (target or "unknown").strip().lower()).rstrip("/")
+    t = t.replace("_", ".")                       # underscored-domain -> dotted host
+    t = re.sub(r'[\\/:*?"<>|]+', "-", t)          # drop chars Windows folders can't have
+    return t.strip(". ") or "unknown"
+
+
+def _report_type_target(name: str) -> tuple:
+    """Split a save_report `name` into (type-label, target). full_recon passes a bare
+    target; full_pipeline/bug_bounty/find_exploits prefix it with their type."""
+    n = (name or "").strip()
+    for pfx, label in (("pipeline_", "pipeline"), ("bugbounty_", "bugbounty"),
+                       ("exploits_", "exploits")):
+        if n.lower().startswith(pfx):
+            return label, n[len(pfx):]
+    return "recon", n
+
+
 def _parse_nuclei_findings(raw: str) -> list:
     """Parse nuclei output lines → structured findings.
     Nuclei format: [template-id] [protocol] [severity] url [extra]"""
@@ -492,26 +513,20 @@ class UltronAgent:
     # =====================================
     def save_report(self, name: str, content: str) -> str:
         try:
-            desktop = os.path.join(
-                os.path.expanduser("~"), "Desktop"
-            )
-            date_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            safe_name = (
-                name.lower()
-                .replace(" ", "_")
-                .replace("/", "_")
-                .replace(":", "")
-                .replace(".", "_")
-            )
-            filename = f"ultron_{safe_name}_{date_str}.md"
-            filepath = os.path.join(desktop, filename)
+            typ, target = _report_type_target(name)
+            site = _clean_site(target)
+            folder = os.path.join(os.path.expanduser("~"), "Desktop", "Ultron Reports", site)
+            os.makedirs(folder, exist_ok=True)
+            date_str = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
+            filename = f"{typ}_{date_str}.md"
+            filepath = os.path.join(folder, filename)
 
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write(content)
 
             # Store for HTML export
             self._last_report_md = content
-            self._last_report_name = safe_name
+            self._last_report_name = f"{site}_{typ}"
 
             return filepath
         except Exception:
@@ -938,11 +953,12 @@ class UltronAgent:
         try:
             from playwright.sync_api import sync_playwright
 
-            desktop = os.path.join(os.path.expanduser("~"), "Desktop")
-            date_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            safe = target.replace(".", "_").replace("/", "_").replace(":", "")[:30]
-            filename = f"screenshot_{safe}_{date_str}.png"
-            filepath = os.path.join(desktop, filename)
+            folder = os.path.join(os.path.expanduser("~"), "Desktop", "Ultron Reports",
+                                  _clean_site(target))
+            os.makedirs(folder, exist_ok=True)
+            date_str = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
+            filename = f"screenshot_{date_str}.png"
+            filepath = os.path.join(folder, filename)
 
             print(f"[ULTRON] Screenshot: {url}")
 
@@ -956,7 +972,7 @@ class UltronAgent:
 
             return {
                 "success": True,
-                "message": f"Screenshot saved to Desktop: {filename}",
+                "message": f"Screenshot saved: {filepath}",
                 "data": {"path": filepath, "url": url}
             }
 
