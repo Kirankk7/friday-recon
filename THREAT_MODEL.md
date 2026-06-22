@@ -115,6 +115,16 @@ On boot, reports which keys/tools are present. Loud, never fatal. Reduces miscon
 `.env`, `*.key`, `*.pem`, and all runtime JSON memory stores are git-ignored. No secrets are
 constructed in source.
 
+### C7 — Network egress isolation (recommended hardening, deployment-level)
+C3 stops the *assistant's own* fetches from reaching internal hosts, but a hijacked tool command
+(A1) could still exfiltrate via raw `curl`/`wget`/sockets. For any exposed or container
+deployment, run the agent in a network segment whose **outbound traffic is allowlisted** to only
+the endpoints it actually needs (Ollama, the authorized recon targets, required APIs) and block
+arbitrary egress. Then, even if an injected command executes, it cannot phone home with stolen
+data. This is the OS/network-layer complement to the app-layer SSRF guard (C3). Documented as a
+recommendation — not enforced by the code, since the single-user local default assumes a trusted
+host. (Concept adapted from Hermes Agent's egress-isolation guidance, MIT.)
+
 ---
 
 ## 6. Weaknesses (W1–W4 fixed; W5–W7 open)
@@ -158,17 +168,23 @@ the model without isolation. A1 (indirect injection) is currently mitigated only
 allowlist limiting *what* a hijacked model can do — not by preventing the hijack.
 **Fix:** mark tool-ingested content as untrusted in the prompt; require explicit confirmation
 for state-changing / outbound actions triggered off ingested content; never let ingested
-content choose scan targets or recipients.
+content choose scan targets or recipients. **Exfil sub-vector** (a hijack trying to phone data
+home) is additionally contained by **C7 network egress isolation** in exposed/Docker
+deployments — even a successful injection can't reach a non-allowlisted endpoint.
 
 ### W6 — No authentication / authorization (B1, A3) — accepted (local-only)
 The Flask app assumes a single trusted local user. There is no auth. **Accepted** for the
 intended deployment; documented so it is never accidentally exposed.
 
-### W7 — Scan-authorization is honor-system (B4, B5) — MEDIUM
-Nothing technically prevents pointing recon/scan tools at a target the operator is not
-authorized to test. README states "authorized targets only," but it is not enforced.
-**Fix:** optional target allowlist + an explicit per-target authorization acknowledgment
-before active (extended-tier) scans.
+### W7 — Scan-authorization is honor-system (B4, B5) — MEDIUM → partially addressed
+Nothing technically *blocks* pointing recon/scan tools at an unauthorized target. README states
+"authorized targets only."
+**Partially addressed:** `_scope_check` now runs at every active entry point (nmap / full_recon /
+full_pipeline / bug_bounty) — it flags third-party / shared-SaaS hosts and warns when the target
+isn't covered by an optional `data/scope.json` allowlist (`[ULTRON][SCOPE] …`). Advisory and
+non-blocking by design (single-user local tool).
+**Remaining:** make it a hard gate (refuse active scans on out-of-scope targets) + an explicit
+per-target authorization acknowledgment for extended-tier tools.
 
 ---
 
@@ -179,7 +195,8 @@ before active (extended-tier) scans.
 | B2→B4 | LLM-driven malicious tool run | C1 allowlist, C2, **W1 argv-exec** | Low (per-tool flag injection only) |
 | B2→B3 | Command injection | **W2 argv + allowlist** | Low (sinks removed) |
 | B5 | SSRF to metadata/internal | C3, **W3 redirect + encoding checks** | Low (TOCTOU pin pending) |
-| B2 | Indirect prompt injection | C1 (blast-radius only) | Med (W5 open) |
+| B2 | Indirect prompt injection | C1 (blast-radius) + C7 egress isolation (exfil) | Med (W5 open) |
+| B4/B5 | Unauthorized scan target | `_scope_check` advisory + `data/scope.json` | Med (W7 advisory, not a hard gate) |
 | B6 | Key leakage | C6 | Low |
 
 **Closed:** W1, W2, W3, W4 (commits in the `Batch 1`/`Batch 2` security passes).
