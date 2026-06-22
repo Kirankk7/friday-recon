@@ -176,15 +176,17 @@ deployments — even a successful injection can't reach a non-allowlisted endpoi
 The Flask app assumes a single trusted local user. There is no auth. **Accepted** for the
 intended deployment; documented so it is never accidentally exposed.
 
-### W7 — Scan-authorization is honor-system (B4, B5) — MEDIUM → partially addressed
-Nothing technically *blocks* pointing recon/scan tools at an unauthorized target. README states
-"authorized targets only."
-**Partially addressed:** `_scope_check` now runs at every active entry point (nmap / full_recon /
-full_pipeline / bug_bounty) — it flags third-party / shared-SaaS hosts and warns when the target
-isn't covered by an optional `data/scope.json` allowlist (`[ULTRON][SCOPE] …`). Advisory and
-non-blocking by design (single-user local tool).
-**Remaining:** make it a hard gate (refuse active scans on out-of-scope targets) + an explicit
-per-target authorization acknowledgment for extended-tier tools.
+### W7 — Scan-authorization is honor-system (B4, B5) — ✅ mostly closed (scope engine)
+**Was:** nothing technically blocked pointing recon/scan tools at an unauthorized target.
+**Now:** a real scope engine backs `data/scope.json` (`{in_scope, out_of_scope}`, domains +
+`*.wildcards`). `_in_scope(host)` resolves **most-specific-wins** (an exact out-of-scope rule
+beats a broader in-scope wildcard — exactly how HackerOne/Bugcrowd resolve overlapping scope).
+`bug_bounty` and `full_recon` **refuse** an out-of-scope target unless `force`/`--force`;
+`scope_filter()` **drops out-of-scope subdomains** from the recon pipeline so it never touches
+them; third-party/SaaS hosts are still flagged. `scope_status` / `scope` shows the active rules.
+**Residual:** without a `data/scope.json` the tool can't know scope (correct — scope is the
+program's decision); per-vuln-type scope (e.g. "no DoS/clickjacking") not modelled; the `--force`
+override is intentionally available (single-user local tool, honor-system at the edge).
 
 ---
 
