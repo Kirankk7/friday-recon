@@ -213,10 +213,14 @@ def test_scope_guard_flags_saas():
 
 def test_content_discovery_parsers(monkeypatch):
     import shutil
-    monkeypatch.setattr(shutil, "which", lambda t: "/x/ffuf" if t == "ffuf" else None)
-    monkeypatch.setattr(_ult, "run_cmd", lambda *a, **k: "admin\nlogin\nbackup\n")
-    r = _ult.ultron_agent.content_discovery("http://t.com")
-    assert r["data"]["count"] == 3 and r["data"]["tool"] == "ffuf"
+    # gobuster text parser (ffuf path uses JSON-file output, integration-verified)
+    monkeypatch.setattr(shutil, "which", lambda t: "/x/gobuster" if t == "gobuster" else None)
+    monkeypatch.setattr(_ult, "run_cmd", lambda *a, **k: "/admin (Status: 200)\n/x (Status: 301)\nnoise\n")
+    assert _ult.ultron_agent.content_discovery("http://t.com")["data"]["count"] == 2
+    # error sentinel must not be counted as a path
+    monkeypatch.setattr(_ult, "run_cmd", lambda *a, **k: "Timed out.")
+    assert not _ult.ultron_agent.content_discovery("http://t.com").get("data", {}).get("count")
+    # no tool -> graceful
     monkeypatch.setattr(shutil, "which", lambda t: None)
     assert not _ult.ultron_agent.content_discovery("http://t.com")["success"]
 

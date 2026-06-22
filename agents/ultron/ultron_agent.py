@@ -38,6 +38,8 @@ def _resolve(tool: str) -> str:
         "httpx":     _os.path.join(_GOBIN, "httpx.exe"),
         "nuclei":    _os.path.join(_GOBIN, "nuclei.exe"),
         "katana":    _os.path.join(_GOBIN, "katana.exe"),
+        "ffuf":      _os.path.join(_GOBIN, "ffuf.exe"),
+        "gobuster":  _os.path.join(_GOBIN, "gobuster.exe"),
     }
     resolved = known.get(tool, tool)
     # Fallback to plain name if resolved path doesn't exist
@@ -64,6 +66,7 @@ def tool_exists(name: str) -> bool:
 # Only these binaries may be invoked. Anything else is refused.
 _TOOL_ALLOWLIST = {
     "nmap", "subfinder", "httpx", "nuclei", "katana",
+    "ffuf", "gobuster", "feroxbuster",   # content discovery (recon-only)
 }
 # Shell metacharacters that should never appear in a tool argument.
 # We run with list-form subprocess (no shell), but reject these as defense-in-depth.
@@ -1071,22 +1074,42 @@ class UltronAgent:
             return {"success": False, "message": "Target missing.", "data": {}}
         import shutil
         base = _resolve_scheme(target)
-        wl = wordlist or os.path.join(_KB_WORDLIST_DIR, "fuzz_wordlist.txt")
+        wl = wordlist or os.path.join(_KB_WORDLIST_DIR, "common_dirs.txt")
         if not os.path.isfile(wl):
             return {"success": False, "message": f"wordlist not found: {wl}", "data": {}}
+        wl = os.path.abspath(wl).replace("\\", "/")   # fwd slashes — Windows backslashes trip the arg sanitizer
 
         found, tool = [], None
+        _maxtime = str(max(timeout - 5, 10))         # let the tool self-stop before run_cmd's kill
+        def _is_err(o):                               # error sentinel from run_cmd (empty = 0 found, NOT error)
+            return (o or "").strip().startswith(("Tool not found", "Refused", "Timed out", "Error", "__"))
         if shutil.which("ffuf"):
             tool = "ffuf"
+            import tempfile, json as _json
+            _of = os.path.join(tempfile.gettempdir(), f"ffuf_{os.getpid()}.json").replace("\\", "/")
             out = run_cmd(["ffuf", "-u", base.rstrip("/") + "/FUZZ", "-w", wl,
-                           "-mc", "200,204,301,302,307,401,403", "-s", "-t", "40"], timeout=timeout)
-            for ln in out.splitlines():
-                ln = ln.strip()
-                if ln and not ln.startswith(("Tool not found", "__", ":: ", "[")):
-                    found.append(base.rstrip("/") + "/" + ln.lstrip("/"))
+                           "-mc", "200,204,301,302,307,401,403", "-ac", "-t", "20",
+                           "-maxtime", _maxtime, "-of", "json", "-o", _of], timeout=timeout)
+            if _is_err(out) and not os.path.isfile(_of):
+                return {"success": False, "message": f"ffuf: {out.strip()[:90]}", "data": {"found": []}}
+            try:                                  # parse ffuf's structured JSON (no text-noise)
+                with open(_of, encoding="utf-8") as fh:
+                    for res in _json.load(fh).get("results", []):
+                        u = res.get("url", "")
+                        if u:
+                            found.append(u.split("#")[0])
+            except Exception:
+                pass
+            finally:
+                try:
+                    os.remove(_of)
+                except Exception:
+                    pass
         elif shutil.which("gobuster"):
             tool = "gobuster"
-            out = run_cmd(["gobuster", "dir", "-u", base, "-w", wl, "-q", "-t", "40"], timeout=timeout)
+            out = run_cmd(["gobuster", "dir", "-u", base, "-w", wl, "-q", "-t", "20"], timeout=timeout)
+            if _is_err(out):
+                return {"success": False, "message": f"gobuster: {out.strip()[:90]}", "data": {"found": []}}
             for ln in out.splitlines():
                 m = re.match(r"(/\S+)\s+\(Status:\s*\d+\)", ln.strip())
                 if m:
@@ -1094,6 +1117,8 @@ class UltronAgent:
         elif shutil.which("feroxbuster"):
             tool = "feroxbuster"
             out = run_cmd(["feroxbuster", "-u", base, "-w", wl, "--silent", "-t", "40"], timeout=timeout)
+            if _is_err(out):
+                return {"success": False, "message": f"feroxbuster: {out.strip()[:90]}", "data": {"found": []}}
             for ln in out.splitlines():
                 ln = ln.strip()
                 if ln.startswith("http"):
