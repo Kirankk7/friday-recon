@@ -342,30 +342,76 @@ _SAAS_HOSTS = ("atlassian.net", "okta.com", "zendesk.com", "salesforce.com", "cl
                "netlify.app", "vercel.app", "firebaseapp.com", "s3.amazonaws.com")
 
 
+def _load_scope() -> dict:
+    """Load data/scope.json (cwd-relative). Accepts a bare list (= in_scope) or
+    {in_scope, out_of_scope}. Returns {} when absent/invalid."""
+    try:
+        import json
+        p = os.path.join("data", "scope.json")
+        if not os.path.isfile(p):
+            return {}
+        raw = json.load(open(p, encoding="utf-8"))
+        if isinstance(raw, list):
+            return {"in_scope": raw, "out_of_scope": []}
+        return {"in_scope": raw.get("in_scope", []), "out_of_scope": raw.get("out_of_scope", [])}
+    except Exception:
+        return {}
+
+
+def _host_score(rule: str, host: str) -> int:
+    """Specificity score if `rule` matches `host`, else -1. Exact match outranks a wildcard;
+    among the same kind the longer (deeper) domain is more specific — mirrors how bug-bounty
+    programs resolve overlapping scope ('most specific wins')."""
+    r = (rule or "").strip().lower()
+    wild = r.startswith("*.")
+    r = r.lstrip("*.").lstrip(".")
+    if not r:
+        return -1
+    if host == r or host.endswith("." + r):
+        return len(r) + (0 if wild else 1000)   # exact (+1000) always beats a wildcard
+    return -1
+
+
+def _in_scope(host: str) -> str:
+    """'in' / 'out' / 'unknown' for a host, applying most-specific-wins between the in_scope
+    and out_of_scope rule sets. 'unknown' = no scope.json, or no rule matched."""
+    host = re.sub(r"^https?://", "", (host or "").strip().lower()).split("/")[0].split(":")[0]
+    scope = _load_scope()
+    if not host or not scope:
+        return "unknown"
+    best_in = max([_host_score(r, host) for r in scope.get("in_scope", [])], default=-1)
+    best_out = max([_host_score(r, host) for r in scope.get("out_of_scope", [])], default=-1)
+    if best_out >= 0 and best_out >= best_in:   # tie or a more-specific exclusion → OUT
+        return "out"
+    if best_in >= 0:
+        return "in"
+    return "unknown"
+
+
+def scope_filter(hosts: list) -> tuple:
+    """Split hosts into (kept = in/unknown, dropped = out-of-scope). With no scope.json
+    everything is kept (nothing dropped)."""
+    keep, drop = [], []
+    for h in hosts or []:
+        (drop if _in_scope(h) == "out" else keep).append(h)
+    return keep, drop
+
+
 def _scope_check(target: str) -> str:
-    """Advisory scope guard (non-blocking — single-user local tool). Flags third-party SaaS
-    hosts, and if data/scope.json exists (a list of allowed domains / *.wildcards) warns when
-    the target isn't covered. Returns an advisory string, or '' when all clear."""
+    """Advisory scope note for one target: OUT-of-scope (hard), not-in-scope.json, or a
+    third-party SaaS host. Returns '' when all clear."""
     host = re.sub(r"^https?://", "", (target or "").strip().lower()).split("/")[0].split(":")[0]
     if not host:
         return ""
     notes = []
+    verdict = _in_scope(host)
+    if verdict == "out":
+        notes.append(f"'{host}' is OUT OF SCOPE per data/scope.json — do NOT test it.")
+    elif verdict == "unknown" and _load_scope():
+        notes.append(f"'{host}' is not covered by data/scope.json — confirm it's authorized.")
     if any(host == s or host.endswith("." + s) for s in _SAAS_HOSTS):
         notes.append(f"'{host}' is third-party/shared (SaaS) hosting — only test if the program "
                      f"explicitly authorizes this exact asset.")
-    try:
-        import json
-        p = os.path.join("data", "scope.json")
-        if os.path.isfile(p):
-            scope = json.load(open(p, encoding="utf-8"))
-            allowed = scope if isinstance(scope, list) else scope.get("in_scope", [])
-            def _covers(rule, h):
-                rule = rule.lower().lstrip("*.")
-                return h == rule or h.endswith("." + rule)
-            if allowed and not any(_covers(r, host) for r in allowed):
-                notes.append(f"'{host}' is NOT in data/scope.json — confirm it's authorized before active testing.")
-    except Exception:
-        pass
     return "  ".join(notes)
 
 
@@ -1224,6 +1270,11 @@ class UltronAgent:
         sub_r = self.subfinder(target)
         sections["subfinder"] = sub_r.get("message", "Failed.")
         subdomains = sub_r.get("data", {}).get("subdomains", [])
+        # Scope filter — drop any out-of-scope subdomains so the pipeline never touches them
+        subdomains, _oos = scope_filter(subdomains)
+        if _oos:
+            sections["subfinder"] += f"  [SCOPE: dropped {len(_oos)} out-of-scope: {', '.join(_oos[:5])}]"
+            print(f"[ULTRON][SCOPE] dropped {len(_oos)} out-of-scope subdomain(s).")
 
         # ── Stage 3: Httpx ── (resolve http/https, don't force https)
         print("[ULTRON] Stage 3/5: Httpx...")
@@ -1773,7 +1824,7 @@ Report:"""
                 "low": "Low — limited direct impact; defence-in-depth concern.",
                 }.get(sev, "Informational — minimal direct security impact.")
 
-    def bug_bounty(self, target: str, validate: bool = True) -> dict:
+    def bug_bounty(self, target: str, validate: bool = True, force: bool = False) -> dict:
         """Full bug-bounty hunt: recon pipeline → parse findings → CVE/exploit
         lookup → (validate) → structured PoC report. Authorized targets only."""
         if not target:
@@ -1785,6 +1836,10 @@ Report:"""
         _sc = _scope_check(target)
         if _sc:
             print(f"[ULTRON][SCOPE] {_sc}")
+        if _in_scope(target) == "out" and not force:
+            return {"success": False, "data": {"target": target},
+                    "message": f"REFUSED: '{target}' is OUT OF SCOPE per data/scope.json. "
+                               f"Pass force=True (or --force) only if you're certain it's authorized."}
 
         # ── Stage 1: Recon pipeline (nmap→subfinder→httpx→nuclei→katana) ──
         pipeline = self.full_pipeline(target)
@@ -1885,7 +1940,7 @@ Report:"""
     # =====================================
     # FULL RECON WORKFLOW
     # =====================================
-    def full_recon(self, target: str) -> dict:
+    def full_recon(self, target: str, force: bool = False) -> dict:
 
         if not target:
             return {"success": False, "message": "Target missing.", "data": {}}
@@ -1894,6 +1949,9 @@ Report:"""
         _sc = _scope_check(target)
         if _sc:
             print(f"[ULTRON][SCOPE] {_sc}")
+        if _in_scope(target) == "out" and not force:
+            return {"success": False, "data": {"target": target},
+                    "message": f"REFUSED: '{target}' is OUT OF SCOPE per data/scope.json. Pass --force if authorized."}
 
         date_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
         sections = {}
@@ -2722,6 +2780,21 @@ Report:"""
         err = res.get("message") or (res.get("stderr") or "")[:500] or status
         return {"success": False, "message": f"{tool_id} failed: {err}", "data": res}
 
+    def scope_status(self) -> dict:
+        """Show the current bug-bounty scope (data/scope.json) so you can confirm what
+        the tool will and won't touch."""
+        scope = _load_scope()
+        if not scope:
+            return {"success": True, "data": {"scope": {}},
+                    "message": "No data/scope.json — every target is treated as 'unknown' (advisory only). "
+                               "Create it: {\"in_scope\":[\"*.acme.com\"],\"out_of_scope\":[\"admin.acme.com\"]}"}
+        ins = scope.get("in_scope", []); outs = scope.get("out_of_scope", [])
+        msg = (f"Scope loaded: {len(ins)} in-scope, {len(outs)} out-of-scope rules.\n"
+               f"  IN:  {', '.join(ins) or '(none)'}\n"
+               f"  OUT: {', '.join(outs) or '(none)'}\n"
+               "Most-specific-wins; out-of-scope targets are refused (use force/--force to override).")
+        return {"success": True, "message": msg, "data": {"scope": scope}}
+
     # =====================================
     # RUN
     # =====================================
@@ -2753,13 +2826,14 @@ Report:"""
                 return self.nuclei_scan(target, parameters.get("severity", "medium,high,critical"))
 
             elif action == "full_recon":
-                return self.full_recon(target)
+                return self.full_recon(target, parameters.get("force", False))
 
             elif action == "full_pipeline":
                 return self.full_pipeline(target)
 
             elif action == "bug_bounty":
-                return self.bug_bounty(target, parameters.get("validate", True))
+                return self.bug_bounty(target, parameters.get("validate", True),
+                                       parameters.get("force", False))
 
             elif action == "katana_crawl":
                 return self.katana_crawl(target, parameters.get("depth", 3))
@@ -2820,6 +2894,9 @@ Report:"""
             elif action == "list_targets":
                 from core import target_profiles
                 return target_profiles.list_targets()
+
+            elif action == "scope_status":
+                return self.scope_status()
 
             elif action == "profile_note":
                 from core import target_profiles

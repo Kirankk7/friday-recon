@@ -230,3 +230,20 @@ def test_spa_crawl_graceful_no_playwright(monkeypatch):
     monkeypatch.setitem(sys.modules, "playwright.sync_api", None)   # force import failure
     r = _ult.ultron_agent.spa_crawl("example.com")
     assert not r["success"] and "Playwright" in r["message"]
+
+
+def test_scope_most_specific_wins(monkeypatch):
+    monkeypatch.setattr(_ult, "_load_scope", lambda: {
+        "in_scope": ["*.acme.com", "api.acme.io"],
+        "out_of_scope": ["admin.acme.com", "*.staging.acme.com"]})
+    assert _ult._in_scope("app.acme.com") == "in"
+    assert _ult._in_scope("admin.acme.com") == "out"       # exact OOS beats *.acme.com
+    assert _ult._in_scope("x.staging.acme.com") == "out"
+    assert _ult._in_scope("evil.com") == "unknown"
+    keep, drop = _ult.scope_filter(["app.acme.com", "admin.acme.com", "blog.acme.com"])
+    assert "admin.acme.com" in drop and "app.acme.com" in keep
+
+def test_bugbounty_refuses_out_of_scope(monkeypatch):
+    monkeypatch.setattr(_ult, "_load_scope", lambda: {"in_scope": ["*.acme.com"], "out_of_scope": ["admin.acme.com"]})
+    r = _ult.ultron_agent.bug_bounty("admin.acme.com")
+    assert not r["success"] and "OUT OF SCOPE" in r["message"]

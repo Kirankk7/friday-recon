@@ -45,9 +45,9 @@ def main() -> int:
 
     sp = sub.add_parser("scan", help="Nmap port scan")
     sp.add_argument("target"); sp.add_argument("--type", default="basic")
-    add("recon", "Full recon pipeline (nmap→subfinder→httpx→nuclei→katana)", "target")
+    sp_rc = add("recon", "Full recon pipeline (nmap→subfinder→httpx→nuclei→katana)", "target"); sp_rc.add_argument("--force", action="store_true")
     add("cve", "Search NVD for CVEs by keyword", "keyword")
-    add("bugbounty", "Full bug-bounty workflow → validated PoC report", "target")
+    sp_bb = add("bugbounty", "Full bug-bounty workflow → validated PoC report", "target"); sp_bb.add_argument("--force", action="store_true")
     add("burp", "Ingest a Burp HTTP-history XML export → endpoint inventory", "path")
     add("kb", "Ask the bug-bounty methodology knowledge base", "query")
     add("github-hunt", "Enumerate an org/user's repos + flag secret-prone files", "org")
@@ -56,15 +56,16 @@ def main() -> int:
     add("discover", "Brute-force hidden paths/dirs (ffuf/gobuster)", "target")
     add("spacrawl", "Render a JS/SPA in headless Chromium → capture API surface", "target")
     sub.add_parser("targets", help="List profiled targets")
+    sub.add_parser("scope", help="Show the current in/out-of-scope rules (data/scope.json)")
     sub.add_parser("defensive", help="Blue-team host scan (new ports / suspicious procs)")
     sub.add_parser("wordlist", help="List bundled wordlists").add_argument("kind", nargs="?", default="")
 
     a = p.parse_args()
     c = a.cmd
     if c == "scan":        return _run("nmap_scan", target=a.target, scan_type=a.type)
-    if c == "recon":       return _run("full_recon", target=a.target)
+    if c == "recon":       return _run("full_recon", target=a.target, force=getattr(a,"force",False))
     if c == "cve":         return _run("search_cve", keyword=a.keyword)
-    if c == "bugbounty":   return _run("bug_bounty", target=a.target)
+    if c == "bugbounty":   return _run("bug_bounty", target=a.target, force=getattr(a,"force",False))
     if c == "burp":        return _run("ingest_burp", path=a.path)
     if c == "kb":          return _run("kb_methodology", query=a.query)
     if c == "github-hunt": return _run("github_hunt", org=a.org)
@@ -73,6 +74,7 @@ def main() -> int:
     if c == "discover":    return _run("content_discovery", target=a.target)
     if c == "spacrawl":    return _run("spa_crawl", target=a.target)
     if c == "targets":     return _run("list_targets")
+    if c == "scope":       return _run("scope_status")
     if c == "defensive":   return _run("defensive_scan")
     if c == "wordlist":    return _run("kb_wordlist", kind=a.kind)
     p.print_help(); return 1
