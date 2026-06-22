@@ -330,6 +330,19 @@ _TEST_REFS = {
 }
 
 
+# Analyst reasoning discipline injected into report-synthesis prompts — keeps the local
+# model concrete and low-hallucination (state evidence, never assert a finding without one).
+_ANALYST_DISCIPLINE = (
+    "Reason like a disciplined analyst — for every claim, work the loop: "
+    "RECON (what the scan data actually shows — name the exact endpoint/header/response), "
+    "HYPOTHESIS (which vulnerability class that evidence suggests), "
+    "TEST (the minimal probe that separates a real bug from a false positive), "
+    "CONFIRM (is a concrete indicator present in the data?). "
+    "NEVER state a finding without a concrete indicator from the results above; if the "
+    "evidence isn't there, say so plainly and move on. No speculation, no filler."
+)
+
+
 def _detect_db(httpx_txt: str, findings: list) -> str:
     """Best-effort DB fingerprint from tech-detect output + any SQLi error evidence."""
     s = (httpx_txt or "").lower() + " " + \
@@ -524,6 +537,8 @@ class UltronAgent:
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write(content)
 
+            self._write_site_index(folder, site)   # refresh the folder's navigation index
+
             # Store for HTML export
             self._last_report_md = content
             self._last_report_name = f"{site}_{typ}"
@@ -531,6 +546,31 @@ class UltronAgent:
             return filepath
         except Exception:
             return None
+
+    def _write_site_index(self, folder: str, site: str) -> None:
+        """(Re)write _index.md — a newest-first table of every report/screenshot in this
+        target's folder, so anyone opening it can navigate at a glance."""
+        try:
+            items = []
+            for fn in os.listdir(folder):
+                if fn == "_index.md" or fn.startswith("."):
+                    continue
+                fp = os.path.join(folder, fn)
+                if os.path.isfile(fp):
+                    items.append((os.path.getmtime(fp), fn))
+            items.sort(reverse=True)
+            lines = [f"# Ultron Reports — {site}", "",
+                     f"_{len(items)} file(s) · newest first · updated "
+                     f"{datetime.datetime.now():%Y-%m-%d %H:%M}_", "",
+                     "| Type | File | When |", "|------|------|------|"]
+            for mt, fn in items:
+                typ = fn.split("_", 1)[0]
+                when = datetime.datetime.fromtimestamp(mt).strftime("%Y-%m-%d %H:%M")
+                lines.append(f"| {typ} | [{fn}]({fn}) | {when} |")
+            with open(os.path.join(folder, "_index.md"), "w", encoding="utf-8") as f:
+                f.write("\n".join(lines) + "\n")
+        except Exception as e:
+            print(f"[ULTRON] index refresh skipped: {e}")
 
     # =====================================
     # EXPORT HTML
@@ -1065,6 +1105,8 @@ Write a structured security assessment:
 8. Recommendations
 
 Technical, precise, actionable. No markdown # headers. Plain section labels.
+
+{_ANALYST_DISCIPLINE}
 {"" if reachable else '''
 CRITICAL — INCONCLUSIVE: the HTTP probe returned NO response; the target was not reachable
 from this host. Treat all empty results as TOOL FAILURE, not safety. Set Risk Assessment to
@@ -1718,6 +1760,8 @@ Write a structured report with:
 7. Recommendations
 
 Be technical, precise, and actionable. No markdown headers with #. Plain section labels.
+
+{_ANALYST_DISCIPLINE}
 {"" if reachable else '''
 CRITICAL — SCAN INCONCLUSIVE: the HTTP probe returned NO response, so the target could
 not be reached or assessed from this host. Treat every empty result above as TOOL FAILURE,

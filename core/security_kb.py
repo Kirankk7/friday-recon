@@ -26,6 +26,13 @@ _WORDLIST_DIR = os.path.join("agents", "ultron", "knowledge", "wordlists")
 _INDEX_FILE = os.path.join("data", "security_kb.json")
 _CHUNK_CHARS = 700
 
+# Private notes = 3rd-party personal-use-only licensed content (e.g. PentestingChecklist
+# by m14r41). Both the notes dir AND this index are gitignored — they index LOCALLY and
+# merge into search results at query time, but never enter a committed/shipped artifact,
+# so nothing licensed gets redistributed via the public repo.
+_PRIVATE_NOTES_DIR = os.path.join("agents", "ultron", "knowledge", "notes_private")
+_PRIVATE_INDEX_FILE = os.path.join("data", "security_kb_private.json")
+
 
 def _chunk(text: str) -> list:
     paras = [p.strip() for p in text.split("\n") if p.strip()]
@@ -44,7 +51,8 @@ def _chunk(text: str) -> list:
     return chunks
 
 
-_CACHE = None   # in-memory index (built/loaded once; KB is read-only at runtime)
+_CACHE = None        # in-memory public index (built/loaded once; read-only at runtime)
+_PRIV_CACHE = None   # in-memory private index (None = not loaded yet)
 
 
 def build_index() -> dict:
@@ -103,8 +111,66 @@ def _ensure_index() -> list:
     return chunks
 
 
+def build_private_index() -> dict:
+    """(Re)build the PRIVATE index from notes_private/. Local-only, never committed.
+    Returns {passages: 0} gracefully when the dir is absent (e.g. a fresh clone)."""
+    global _PRIV_CACHE
+    chunks = []
+    if os.path.isdir(_PRIVATE_NOTES_DIR):
+        for name in sorted(os.listdir(_PRIVATE_NOTES_DIR)):
+            path = os.path.join(_PRIVATE_NOTES_DIR, name)
+            if not os.path.isfile(path):
+                continue
+            try:
+                with open(path, "r", encoding="utf-8", errors="replace") as f:
+                    text = f.read()
+            except Exception:
+                continue
+            topic = os.path.splitext(name)[0]
+            if topic.startswith("pc_"):          # pc_api -> api, pc_active-directory -> active directory
+                topic = topic[len("pc_"):]
+            topic = topic.replace("-", " ").replace("_", " ")
+            for piece in _chunk(text):
+                chunks.append({"name": name, "topic": topic,
+                               "chunk": piece, "tokens": _tokenize(topic + " " + piece)})
+    _PRIV_CACHE = chunks
+    if chunks:
+        os.makedirs(os.path.dirname(_PRIVATE_INDEX_FILE), exist_ok=True)
+        try:
+            with open(_PRIVATE_INDEX_FILE, "w", encoding="utf-8") as f:
+                json.dump(chunks, f)
+        except Exception as e:
+            print(f"[security_kb] private index write failed (using in-memory): {e}")
+    return {"success": True, "passages": len(chunks),
+            "docs": len({c["name"] for c in chunks})}
+
+
+def _ensure_private() -> list:
+    """Load (or first-time build) the private index. Empty list when no private notes."""
+    global _PRIV_CACHE
+    if _PRIV_CACHE is not None:
+        return _PRIV_CACHE
+    try:
+        if os.path.exists(_PRIVATE_INDEX_FILE):
+            with open(_PRIVATE_INDEX_FILE, "r", encoding="utf-8") as f:
+                _PRIV_CACHE = json.load(f)
+                return _PRIV_CACHE
+    except Exception as e:
+        print(f"[security_kb] private index read failed, rebuilding: {e}")
+    if os.path.isdir(_PRIVATE_NOTES_DIR):     # notes present but no index yet -> build
+        build_private_index()
+        return _PRIV_CACHE or []
+    _PRIV_CACHE = []
+    return _PRIV_CACHE
+
+
+def _all_chunks() -> list:
+    """Public (shipped) + private (local-only) passages merged for retrieval."""
+    return _ensure_index() + _ensure_private()
+
+
 def search(query: str, top_k: int = 4) -> list:
-    chunks = _ensure_index()
+    chunks = _all_chunks()
     if not chunks or not query.strip():
         return []
     doc_freq = {}
@@ -172,6 +238,8 @@ def wordlist_path(kind: str = "") -> dict:
 
 def stats() -> dict:
     chunks = _load()
+    priv = _ensure_private()
     wl = sorted(os.listdir(_WORDLIST_DIR)) if os.path.isdir(_WORDLIST_DIR) else []
     return {"notes": len({c["name"] for c in chunks}), "passages": len(chunks),
+            "private_notes": len({c["name"] for c in priv}), "private_passages": len(priv),
             "wordlists": len(wl)}
