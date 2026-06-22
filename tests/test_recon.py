@@ -219,3 +219,10 @@ def test_content_discovery_parsers(monkeypatch):
     assert r["data"]["count"] == 3 and r["data"]["tool"] == "ffuf"
     monkeypatch.setattr(shutil, "which", lambda t: None)
     assert not _ult.ultron_agent.content_discovery("http://t.com")["success"]
+
+
+def test_spa_crawl_graceful_no_playwright(monkeypatch):
+    import sys
+    monkeypatch.setitem(sys.modules, "playwright.sync_api", None)   # force import failure
+    r = _ult.ultron_agent.spa_crawl("example.com")
+    assert not r["success"] and "Playwright" in r["message"]
