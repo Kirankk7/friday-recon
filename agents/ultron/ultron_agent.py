@@ -330,6 +330,42 @@ _TEST_REFS = {
 }
 
 
+_KB_WORDLIST_DIR = os.path.join("agents", "ultron", "knowledge", "wordlists")
+
+# Third-party / shared hosting — a host on these isn't yours to attack just because the
+# app on it looks vulnerable; the infra owner hasn't consented (see scope discipline).
+_SAAS_HOSTS = ("atlassian.net", "okta.com", "zendesk.com", "salesforce.com", "cloudfront.net",
+               "azurewebsites.net", "herokuapp.com", "github.io", "myshopify.com", "wpengine.com",
+               "netlify.app", "vercel.app", "firebaseapp.com", "s3.amazonaws.com")
+
+
+def _scope_check(target: str) -> str:
+    """Advisory scope guard (non-blocking — single-user local tool). Flags third-party SaaS
+    hosts, and if data/scope.json exists (a list of allowed domains / *.wildcards) warns when
+    the target isn't covered. Returns an advisory string, or '' when all clear."""
+    host = re.sub(r"^https?://", "", (target or "").strip().lower()).split("/")[0].split(":")[0]
+    if not host:
+        return ""
+    notes = []
+    if any(host == s or host.endswith("." + s) for s in _SAAS_HOSTS):
+        notes.append(f"'{host}' is third-party/shared (SaaS) hosting — only test if the program "
+                     f"explicitly authorizes this exact asset.")
+    try:
+        import json
+        p = os.path.join("data", "scope.json")
+        if os.path.isfile(p):
+            scope = json.load(open(p, encoding="utf-8"))
+            allowed = scope if isinstance(scope, list) else scope.get("in_scope", [])
+            def _covers(rule, h):
+                rule = rule.lower().lstrip("*.")
+                return h == rule or h.endswith("." + rule)
+            if allowed and not any(_covers(r, host) for r in allowed):
+                notes.append(f"'{host}' is NOT in data/scope.json — confirm it's authorized before active testing.")
+    except Exception:
+        pass
+    return "  ".join(notes)
+
+
 # Analyst reasoning discipline injected into report-synthesis prompts — keeps the local
 # model concrete and low-hallucination (state evidence, never assert a finding without one).
 _ANALYST_DISCIPLINE = (
@@ -599,6 +635,9 @@ class UltronAgent:
             return {"success": False, "message": "Target missing.", "data": {}}
 
         print(f"[ULTRON] Nmap scan: {target} ({scan_type})")
+        _sc = _scope_check(target)
+        if _sc:
+            print(f"[ULTRON][SCOPE] {_sc}")
 
         # Flags by scan type
         flags = {
@@ -1022,6 +1061,61 @@ class UltronAgent:
             return {"success": False, "message": f"Screenshot failed: {e}", "data": {}}
 
     # =====================================
+    # CONTENT DISCOVERY (brute hidden paths/dirs crawling misses)
+    # =====================================
+    def content_discovery(self, target: str, wordlist: str = "", timeout: int = 180) -> dict:
+        """Brute-force hidden paths/dirs. Tries ffuf -> gobuster -> feroxbuster (first one
+        installed), bundled wordlist by default. Graceful when no tool present. Found paths
+        are recorded to the target profile so they feed later probing. Authorized targets only."""
+        if not target:
+            return {"success": False, "message": "Target missing.", "data": {}}
+        import shutil
+        base = _resolve_scheme(target)
+        wl = wordlist or os.path.join(_KB_WORDLIST_DIR, "fuzz_wordlist.txt")
+        if not os.path.isfile(wl):
+            return {"success": False, "message": f"wordlist not found: {wl}", "data": {}}
+
+        found, tool = [], None
+        if shutil.which("ffuf"):
+            tool = "ffuf"
+            out = run_cmd(["ffuf", "-u", base.rstrip("/") + "/FUZZ", "-w", wl,
+                           "-mc", "200,204,301,302,307,401,403", "-s", "-t", "40"], timeout=timeout)
+            for ln in out.splitlines():
+                ln = ln.strip()
+                if ln and not ln.startswith(("Tool not found", "__", ":: ", "[")):
+                    found.append(base.rstrip("/") + "/" + ln.lstrip("/"))
+        elif shutil.which("gobuster"):
+            tool = "gobuster"
+            out = run_cmd(["gobuster", "dir", "-u", base, "-w", wl, "-q", "-t", "40"], timeout=timeout)
+            for ln in out.splitlines():
+                m = re.match(r"(/\S+)\s+\(Status:\s*\d+\)", ln.strip())
+                if m:
+                    found.append(base.rstrip("/") + m.group(1))
+        elif shutil.which("feroxbuster"):
+            tool = "feroxbuster"
+            out = run_cmd(["feroxbuster", "-u", base, "-w", wl, "--silent", "-t", "40"], timeout=timeout)
+            for ln in out.splitlines():
+                ln = ln.strip()
+                if ln.startswith("http"):
+                    found.append(ln.split()[-1])
+        else:
+            return {"success": False,
+                    "message": "No content-discovery tool found — install ffuf, gobuster, or feroxbuster.",
+                    "data": {"found": []}}
+
+        found = sorted(set(found))
+        try:
+            from core import target_profiles
+            if found:
+                target_profiles.record_endpoints(_clean_site(target), found)
+        except Exception:
+            pass
+        tail = ", ".join(p.rsplit("/", 1)[-1] for p in found[:10])
+        return {"success": True,
+                "message": f"{tool}: found {len(found)} path(s) on {base}" + (f": {tail}" if found else "."),
+                "data": {"tool": tool, "found": found, "count": len(found)}}
+
+    # =====================================
     # FULL PIPELINE (Phase 24)
     # Nmap → Subfinder → Httpx → Nuclei → Katana → Screenshot
     # =====================================
@@ -1031,6 +1125,9 @@ class UltronAgent:
             return {"success": False, "message": "Target missing.", "data": {}}
 
         print(f"[ULTRON] Full pipeline: {target}")
+        _sc = _scope_check(target)
+        if _sc:
+            print(f"[ULTRON][SCOPE] {_sc}")
 
         date_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
         sections = {}
@@ -1593,6 +1690,9 @@ Report:"""
         # clean target (strip scheme)
         target = re.sub(r"^https?://", "", target.strip(), flags=re.IGNORECASE).rstrip("/")
         print(f"[ULTRON] Bug-bounty workflow on {target}")
+        _sc = _scope_check(target)
+        if _sc:
+            print(f"[ULTRON][SCOPE] {_sc}")
 
         # ── Stage 1: Recon pipeline (nmap→subfinder→httpx→nuclei→katana) ──
         pipeline = self.full_pipeline(target)
@@ -1699,6 +1799,9 @@ Report:"""
             return {"success": False, "message": "Target missing.", "data": {}}
 
         print(f"[ULTRON] Full recon: {target}")
+        _sc = _scope_check(target)
+        if _sc:
+            print(f"[ULTRON][SCOPE] {_sc}")
 
         date_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
         sections = {}
@@ -2556,6 +2659,9 @@ Report:"""
 
             elif action == "katana_crawl":
                 return self.katana_crawl(target, parameters.get("depth", 3))
+
+            elif action == "content_discovery":
+                return self.content_discovery(target, parameters.get("wordlist", ""))
 
             elif action == "take_screenshot":
                 return self.take_screenshot(target)
