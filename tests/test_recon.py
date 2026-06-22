@@ -187,3 +187,21 @@ def test_probe_sqli_anomaly(monkeypatch):
     res = _ult.ultron_agent._probe_injection(["http://t.com/n.aspx?id=1"])
     sqli = [r for r in res if r["template"] == "sqli-error-based"]
     assert sqli and "500" in sqli[0]["evidence"]
+
+
+# ── Feature B: tailored test plan ───────────────────────────────────────────────
+def test_plan_sqli_subtypes():
+    findings = [{"template": "sqli-error-based", "severity": "high",
+                 "url": "http://t.com/Comments.aspx?id=0%27", "validated": True,
+                 "evidence": "OLE DB error", "_gate": {"report": True, "tier": "P2", "score": 6}}]
+    pdata = {"sections": {"httpx": "[200] [Microsoft-IIS, ASP.NET]"},
+             "urls": ["http://t.com/login.aspx", "http://t.com/Comments.aspx?id=0"]}
+    txt = "\n".join(_ult.ultron_agent._build_test_plan("t.com", findings, pdata))
+    for n in ("DB ~ **mssql**", "WAITFOR DELAY", "sqlmap -u", "Access control / IDOR", "Authentication"):
+        assert n in txt, n
+    assert "%27" not in txt.split("sqlmap")[1].split("\n")[0]
+
+def test_plan_skips_irrelevant():
+    txt = "\n".join(_ult.ultron_agent._build_test_plan("t.com", [], {"sections": {}, "urls": []}))
+    assert "GraphQL" not in txt and "file upload" not in txt.lower()
+    assert "No auto-findings" in txt
