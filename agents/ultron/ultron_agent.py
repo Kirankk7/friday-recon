@@ -358,6 +358,17 @@ def _load_scope() -> dict:
         return {}
 
 
+def _load_roe() -> dict:
+    """Load data/roe.json (rules of engagement: out-of-scope vuln types, rate limit, rules).
+    Written by setup_scope from a pasted program policy. {} when absent."""
+    try:
+        import json
+        p = os.path.join("data", "roe.json")
+        return json.load(open(p, encoding="utf-8")) if os.path.isfile(p) else {}
+    except Exception:
+        return {}
+
+
 def _host_score(rule: str, host: str) -> int:
     """Specificity score if `rule` matches `host`, else -1. Exact match outranks a wildcard;
     among the same kind the longer (deeper) domain is more specific — mirrors how bug-bounty
@@ -386,6 +397,57 @@ def _in_scope(host: str) -> str:
     if best_in >= 0:
         return "in"
     return "unknown"
+
+
+def parse_scope(text: str) -> dict:
+    """Read a pasted bug-bounty program policy (in-scope / out-of-scope prose) and extract
+    structured rules of engagement via the local LLM. Returns the parsed dict (best-effort —
+    LLM extraction, verify it). Domains feed the scope engine; out-of-scope vuln types feed
+    the validation gate; rate_limit configures the tools."""
+    import json as _json
+    if not text or len(text.strip()) < 20:
+        return {}
+    prompt = (
+        "You parse bug-bounty program policies into STRICT JSON for an automated tool. "
+        "Output ONLY the JSON object, no prose, no markdown fences.\n\n"
+        "Schema (use [] / null when not stated):\n"
+        "{\n"
+        '  "in_scope_domains": [],     // explicit domains/subdomains/wildcards IN scope, e.g. "accounts.example.com","*.example.com". named surfaces that are not domains -> skip.\n'
+        '  "out_of_scope_domains": [], // explicit domains OUT of scope.\n'
+        '  "in_scope_types": [],       // vuln classes explicitly wanted, short lowercase tags: auth-bypass, oauth, mfa-bypass, sqli, idor, ssrf, xss, account-takeover...\n'
+        '  "out_of_scope_types": [],   // vuln classes NOT accepted, short tags: self-xss, clickjacking, framing, spf, dkim, dmarc, mitm, open-redirect, tls-version, open-ports, dns, missing-csrf, version-disclosure, scanner-noise, dos, social-engineering...\n'
+        '  "rate_limit_rps": null,     // max requests/sec as a NUMBER if stated, else null.\n'
+        '  "max_concurrent": null,     // max concurrent requests as a NUMBER if stated, else null.\n'
+        '  "rules": []                 // short imperative testing rules to remember, e.g. "use only your own accounts", "contact-form subject must include Test", "no DoS".\n'
+        "}\n\n"
+        f"POLICY:\n{text[:6000]}\n\nJSON:"
+    )
+    try:
+        raw = ask_llm(prompt, agent="ultron", autotune_on=False,
+                      params={"temperature": 0.1, "num_predict": 700})
+    except Exception as e:
+        return {"_error": f"LLM parse failed: {e}"}
+    raw = (raw or "").strip()
+    if "```" in raw:                                  # strip code fences if the model adds them
+        raw = re.sub(r"```(?:json)?", "", raw).strip()
+    m = re.search(r"\{.*\}", raw, re.DOTALL)          # grab the JSON object
+    if not m:
+        return {"_error": "no JSON in LLM output", "_raw": raw[:200]}
+    try:
+        d = _json.loads(m.group(0))
+    except Exception:
+        return {"_error": "invalid JSON from LLM", "_raw": m.group(0)[:200]}
+    # normalise
+    out = {
+        "in_scope_domains": [s.strip().lower() for s in (d.get("in_scope_domains") or []) if s],
+        "out_of_scope_domains": [s.strip().lower() for s in (d.get("out_of_scope_domains") or []) if s],
+        "in_scope_types": [s.strip().lower() for s in (d.get("in_scope_types") or []) if s],
+        "out_of_scope_types": [s.strip().lower() for s in (d.get("out_of_scope_types") or []) if s],
+        "rate_limit_rps": d.get("rate_limit_rps"),
+        "max_concurrent": d.get("max_concurrent"),
+        "rules": [s.strip() for s in (d.get("rules") or []) if s],
+    }
+    return out
 
 
 def scope_filter(hosts: list) -> tuple:
@@ -797,10 +859,12 @@ class UltronAgent:
 
         print(f"[ULTRON] Nuclei scan: {target} (severity: {severity})")
 
-        output = run_cmd(
-            ["nuclei", "-u", target, "-severity", severity, "-silent"],
-            timeout=180
-        )
+        cmd = ["nuclei", "-u", target, "-severity", severity, "-silent"]
+        _rl = _load_roe().get("rate_limit_rps")          # honor a program's request-rate cap
+        if _rl:
+            cmd += ["-rl", str(int(_rl)), "-c", str(int(_load_roe().get("max_concurrent") or 5))]
+            print(f"[ULTRON][SCOPE] rate-limited to {_rl} req/s per program policy.")
+        output = run_cmd(cmd, timeout=180)
 
         if "Tool not found" in output:
             return {
@@ -1129,13 +1193,17 @@ class UltronAgent:
         _maxtime = str(max(timeout - 5, 10))         # let the tool self-stop before run_cmd's kill
         def _is_err(o):                               # error sentinel from run_cmd (empty = 0 found, NOT error)
             return (o or "").strip().startswith(("Tool not found", "Refused", "Timed out", "Error", "__"))
+        _rl = _load_roe().get("rate_limit_rps")          # honor a program's request-rate cap
         if shutil.which("ffuf"):
             tool = "ffuf"
             import tempfile, json as _json
             _of = os.path.join(tempfile.gettempdir(), f"ffuf_{os.getpid()}.json").replace("\\", "/")
-            out = run_cmd(["ffuf", "-u", base.rstrip("/") + "/FUZZ", "-w", wl,
-                           "-mc", "200,204,301,302,307,401,403", "-ac", "-t", "20",
-                           "-maxtime", _maxtime, "-of", "json", "-o", _of], timeout=timeout)
+            _ff = ["ffuf", "-u", base.rstrip("/") + "/FUZZ", "-w", wl,
+                   "-mc", "200,204,301,302,307,401,403", "-ac", "-t", "20",
+                   "-maxtime", _maxtime, "-of", "json", "-o", _of]
+            if _rl:
+                _ff += ["-rate", str(int(_rl))]
+            out = run_cmd(_ff, timeout=timeout)
             if _is_err(out) and not os.path.isfile(_of):
                 return {"success": False, "message": f"ffuf: {out.strip()[:90]}", "data": {"found": []}}
             try:                                  # parse ffuf's structured JSON (no text-noise)
@@ -1603,6 +1671,15 @@ Report:"""
         if any(bad in tmpl for bad in self._NEVER_SUBMIT):
             return {"report": False, "score": 0, "tier": self._PAYOUT_TIER.get(sev, "P5"),
                     "reasons": [], "drop": "informational/noise class (never-submit list)"}
+
+        # program-specific out-of-scope types (from a pasted policy via setup_scope → roe.json)
+        _oos_types = _load_roe().get("out_of_scope_types", [])
+        _blob = (tmpl + " " + (f.get("evidence") or "")).lower()
+        for _t in _oos_types:
+            _tag = _t.replace("-", "").replace("_", "")
+            if _t and (_t in _blob or _tag in _blob.replace("-", "").replace("_", "")):
+                return {"report": False, "score": 0, "tier": self._PAYOUT_TIER.get(sev, "P5"),
+                        "reasons": [], "drop": f"out-of-scope for this program ({_t})"}
 
         reasons, score = [], 0
         # Q1 — meaningful severity (info-only alone is not worth a report)
@@ -2780,6 +2857,42 @@ Report:"""
         err = res.get("message") or (res.get("stderr") or "")[:500] or status
         return {"success": False, "message": f"{tool_id} failed: {err}", "data": res}
 
+    def setup_scope(self, text: str) -> dict:
+        """Paste a bug-bounty program policy → parse it (local LLM) → set up the hunt:
+        writes data/scope.json (in/out domains, enforced) + data/roe.json (out-of-scope vuln
+        types filtered from findings, rate limit applied to tools, rules to remember).
+        Then run 'bug bounty <in-scope-target>' — it'll respect all of this."""
+        if not text or len(text.strip()) < 20:
+            return {"success": False, "message": "Paste the program's in-scope / out-of-scope text.", "data": {}}
+        print("[ULTRON] Parsing program scope with LLM...")
+        p = parse_scope(text)
+        if p.get("_error"):
+            return {"success": False, "message": f"Couldn't parse scope: {p['_error']}", "data": p}
+        import json as _json
+        os.makedirs("data", exist_ok=True)
+        scope = {"in_scope": p["in_scope_domains"], "out_of_scope": p["out_of_scope_domains"]}
+        roe = {k: p[k] for k in ("in_scope_types", "out_of_scope_types",
+                                 "rate_limit_rps", "max_concurrent", "rules")}
+        try:
+            _json.dump(scope, open(os.path.join("data", "scope.json"), "w", encoding="utf-8"), indent=2)
+            _json.dump(roe, open(os.path.join("data", "roe.json"), "w", encoding="utf-8"), indent=2)
+        except Exception as e:
+            return {"success": False, "message": f"scope save failed: {e}", "data": {}}
+        rl = roe.get("rate_limit_rps")
+        msg = (
+            "Scope set from the pasted policy — verify it's right:\n"
+            f"  IN-SCOPE domains:     {', '.join(scope['in_scope']) or '(none stated — pass the target yourself)'}\n"
+            f"  OUT-OF-SCOPE domains: {', '.join(scope['out_of_scope']) or '(none)'}\n"
+            f"  Looking for:          {', '.join(roe['in_scope_types']) or 'any class'}\n"
+            f"  Will NOT report:      {', '.join(roe['out_of_scope_types']) or '(none)'}\n"
+            f"  Rate limit:           {(str(rl) + ' req/s') if rl else 'none stated'}"
+            + (f", {roe['max_concurrent']} concurrent" if roe.get("max_concurrent") else "")
+            + (("\n  Remember:             " + "  |  ".join(roe["rules"])) if roe.get("rules") else "")
+            + "\n\nNow run a hunt on an in-scope target — out-of-scope targets are refused, out-of-scope "
+              "finding types are filtered, and the rate limit is applied to the scanners."
+        )
+        return {"success": True, "message": msg, "data": {"scope": scope, "roe": roe}}
+
     def scope_status(self) -> dict:
         """Show the current bug-bounty scope (data/scope.json) so you can confirm what
         the tool will and won't touch."""
@@ -2897,6 +3010,9 @@ Report:"""
 
             elif action == "scope_status":
                 return self.scope_status()
+
+            elif action == "setup_scope":
+                return self.setup_scope(parameters.get("text", ""))
 
             elif action == "profile_note":
                 from core import target_profiles
