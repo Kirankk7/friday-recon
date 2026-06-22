@@ -1,0 +1,4 @@
+{
+  "in_scope":  ["*.example.com", "api.example.io"],
+  "out_of_scope": ["admin.example.com", "*.staging.example.com", "blog.example.com"]
+}
