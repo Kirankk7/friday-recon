@@ -247,3 +247,22 @@ def test_bugbounty_refuses_out_of_scope(monkeypatch):
     monkeypatch.setattr(_ult, "_load_scope", lambda: {"in_scope": ["*.acme.com"], "out_of_scope": ["admin.acme.com"]})
     r = _ult.ultron_agent.bug_bounty("admin.acme.com")
     assert not r["success"] and "OUT OF SCOPE" in r["message"]
+
+
+def test_setup_scope_and_roe_filter(monkeypatch, tmp_path):
+    import os, json
+    monkeypatch.setattr(_ult, "parse_scope", lambda t: {
+        "in_scope_domains": ["*.acme.com"], "out_of_scope_domains": [],
+        "in_scope_types": ["sqli"], "out_of_scope_types": ["self-xss", "open-ports"],
+        "rate_limit_rps": 5, "max_concurrent": 5, "rules": ["use own accounts"]})
+    # isolate data/ via cwd
+    monkeypatch.chdir(tmp_path)
+    os.makedirs("data", exist_ok=True)
+    r = _ult.ultron_agent.setup_scope("a long enough policy text to clear the length guard here")
+    assert r["success"]
+    assert json.load(open("data/roe.json"))["rate_limit_rps"] == 5
+    g_xss = _ult.ultron_agent._validate_finding(
+        {"template": "self-xss-x", "severity": "high", "url": "http://x/p?id=1", "validated": True, "cve": ""}, {})
+    g_sqli = _ult.ultron_agent._validate_finding(
+        {"template": "sqli-error-based", "severity": "high", "url": "http://x/p?id=1", "validated": True, "cve": ""}, {})
+    assert not g_xss["report"] and g_sqli["report"]
