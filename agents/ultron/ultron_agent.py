@@ -282,6 +282,18 @@ def _match_products(cve_kws: set, svc_toks: set) -> list:
 _SEV_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4, "unknown": 5}
 
 
+# Error-based SQLi response signatures (DB engine error strings leaking into the page).
+_SQL_ERROR_SIGNS = re.compile(
+    r"sql syntax|mysql_fetch|you have an error in your sql|ORA-\d{5}|"
+    r"microsoft ole db|unclosed quotation mark|sqlite_error|sqlstate|"
+    r"npgsql|psqlexception|pg::syntaxerror|syntax error at or near|"
+    r"warning:\s*mysql|valid mysql result|sqlexception|incorrect syntax near|"
+    r"odbc.*driver|microsoft jet database",
+    re.IGNORECASE)
+# Unique-ish token for reflected-XSS detection (with angle brackets to prove no encoding).
+_XSS_MARKER = "jvz9xqk7z"
+
+
 def _parse_nuclei_findings(raw: str) -> list:
     """Parse nuclei output lines → structured findings.
     Nuclei format: [template-id] [protocol] [severity] url [extra]"""
@@ -1121,6 +1133,97 @@ Report:"""
         "low": "P4 (Low)", "info": "P5 (Informational)",
     }
 
+    def _probe_injection(self, urls: list, max_urls: int = 30, max_params: int = 8) -> list:
+        """Lightweight injection smell-test over crawled URLs that carry query params.
+
+        For each param sends ONE benign probe — a single quote (error-based SQLi
+        signal) and a reflected marker (XSS) — and flags CANDIDATES, not exploits.
+        Minimal-proof by design: one extra request per param, hard-capped, no data
+        pulled. Findings carry validated=True (signal observed directly) + evidence
+        + repro so the quality gate and report can use them. Authorized targets only.
+        """
+        import time
+        from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
+        try:
+            import requests
+        except Exception:
+            return []
+        out, seen, tested = [], set(), 0
+        for u in urls or []:
+            if tested >= max_urls:
+                break
+            try:
+                parts = urlsplit(u)
+                qs = parse_qsl(parts.query, keep_blank_values=True)
+                if not qs or parts.scheme not in ("http", "https"):
+                    continue
+                tested += 1
+                # baseline response for this URL (once) — for differential detection
+                base_status, base_len = None, None
+                try:
+                    b = requests.get(u, timeout=8)
+                    base_status, base_len = b.status_code, len(b.text or "")
+                except Exception:
+                    pass
+                for i, (k, v) in enumerate(qs[:max_params]):
+                    sig = (parts.scheme, parts.netloc, parts.path, k)
+                    if sig in seen:
+                        continue
+                    seen.add(sig)
+                    # --- SQLi probe (single quote): error-string OR response anomaly ---
+                    try:
+                        q = qs.copy(); q[i] = (k, (v or "") + "'")
+                        purl = urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(q), ""))
+                        time.sleep(0.1)
+                        r = requests.get(purl, timeout=8)
+                        body = r.text or ""
+                        m = _SQL_ERROR_SIGNS.search(body)
+                        # anomaly: baseline was a healthy 200-with-body, but the quote
+                        # flips it to a server error / empty body = query broke (classic SQLi).
+                        anomaly = (base_status == 200 and (base_len or 0) > 200
+                                   and (r.status_code >= 500 or len(body) == 0))
+                        if m or anomaly:
+                            ev = (f"DB error '{m.group(0)}' surfaced after injecting a single quote into param '{k}'."
+                                  if m else
+                                  f"Injecting a single quote into param '{k}' changed the response from "
+                                  f"HTTP 200/{base_len}b to HTTP {r.status_code}/{len(body)}b — server-side "
+                                  f"query error, a classic error-based SQLi signal.")
+                            out.append({
+                                "template": "sqli-error-based", "severity": "high",
+                                "url": purl, "cve": None, "validated": True, "evidence": ev,
+                                "repro": [f"Baseline: GET {u}  → HTTP {base_status}/{base_len}b",
+                                          f"Inject:   GET {purl}",
+                                          ("Observe the database error in the response body" if m
+                                           else f"Observe the response break to HTTP {r.status_code}/{len(body)}b")],
+                            })
+                            continue   # one finding per param is enough
+                    except Exception:
+                        pass
+                    # --- reflected-XSS probe (look for unencoded marker) ---
+                    try:
+                        marker = _XSS_MARKER + "<x>"
+                        q = qs.copy(); q[i] = (k, marker)
+                        purl = urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(q), ""))
+                        time.sleep(0.1)
+                        r = requests.get(purl, timeout=8)
+                        if marker in (r.text or ""):
+                            out.append({
+                                "template": "xss-reflected", "severity": "medium",
+                                "url": purl, "cve": None, "validated": True,
+                                "evidence": f"Input '{marker}' reflected unencoded in the response for param '{k}'.",
+                                "repro": [f"Send: GET {purl}",
+                                          f"Find the literal string '{marker}' (angle brackets intact) in the response",
+                                          "Escalate to a script payload only under authorized manual testing"],
+                            })
+                    except Exception:
+                        pass
+            except Exception:
+                continue
+        if out:
+            print(f"[ULTRON] injection smell-test flagged {len(out)} candidate(s) "
+                  f"across {tested} parameterized endpoint(s).")
+        return out
+
     def _validate_finding(self, f: dict, exploits_map: dict) -> dict:
         """
         7-question quality gate. Returns {report, score, tier, reasons, drop}.
@@ -1211,15 +1314,21 @@ Report:"""
                     lines.append(f"- **Location:** {f['url']}")
                 lines.append(f"- **Status:** {'Confirmed live' if f.get('validated') else 'Reported by scanner (unconfirmed)'}")
                 lines.append(f"- **Confidence:** {g['score']}/7 quality checks passed")
+                if f.get("evidence"):
+                    lines.append(f"- **Evidence:** {f['evidence']}")
                 if f.get("cve"):
                     lines.append(f"- **CVE:** {f['cve']}")
                     ex = exploits_map.get(f["cve"])
                     if ex:
                         lines.append(f"- **Public exploit/PoC:** {ex}")
                 lines.append("- **Steps to reproduce:**")
-                lines.append(f"  1. Probe the endpoint: `httpx -u {f.get('url') or target}`")
-                lines.append(f"  2. Re-run the detection: `nuclei -u {f.get('url') or target} -id {f['template']}`")
-                lines.append("  3. Confirm the response matches the signature above.")
+                if f.get("repro"):
+                    for n, step in enumerate(f["repro"], 1):
+                        lines.append(f"  {n}. {step}")
+                else:
+                    lines.append(f"  1. Probe the endpoint: `httpx -u {f.get('url') or target}`")
+                    lines.append(f"  2. Re-run the detection: `nuclei -u {f.get('url') or target} -id {f['template']}`")
+                    lines.append("  3. Confirm the response matches the signature above.")
                 lines.append(f"- **Impact:** {self._impact_line(f)}")
                 lines.append("- **Remediation:** "
                              + ("Patch to a fixed version per the CVE advisory." if f.get("cve")
@@ -1273,6 +1382,14 @@ Report:"""
 
         # ── Stage 2: Parse nuclei → structured findings ──
         findings = _parse_nuclei_findings(nuclei_raw)
+
+        # ── Stage 2.5: Injection smell-test on crawled parameterized endpoints ──
+        # nuclei detects known CVEs/misconfigs, not custom app-logic SQLi/XSS — so
+        # actively probe the params katana found and surface injectable candidates.
+        try:
+            findings += self._probe_injection(pdata.get("urls", []))
+        except Exception as e:
+            print(f"[ULTRON] injection probe skipped: {e}")
 
         # ── Stage 3: CVE → exploit lookup (critical/high only, capped) ──
         exploits_map = {}
