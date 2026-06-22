@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import platform
 import subprocess
@@ -811,7 +812,7 @@ class UltronAgent:
         if not target:
             return {"success": False, "message": "Target missing.", "data": {}}
 
-        url = target if target.startswith(("http://", "https://")) else f"https://{target}"
+        url = _resolve_scheme(target)
         print(f"[ULTRON] Katana crawl: {url} (depth={depth})")
 
         output = run_cmd(
