@@ -10,3 +10,13 @@ test_report_*.html
 # …but the shipped assets stay tracked:
 !agents/ultron/hackingtool/data/
 !agents/ultron/hackingtool/data/tools.json
+
+# ─── LOCAL-ONLY deep-exploitation layer (vendored GPL tools + private orchestration;
+#     never redistributed — keep the public repo at detect+guide level) ───────────
+agents/ultron/_deep/
+agents/ultron/deep_tools.py
+deep_hunt.py
+
+# ─── Private KB notes (personal-use-only licensed; local mirror of JARVIS KB) ───
+agents/ultron/knowledge/notes_private/
+data/security_kb_private.json
