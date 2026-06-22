@@ -147,3 +147,43 @@ def test_no_shell_sinks_in_ultron():
 def test_ht_run_no_bash_lc():
     c = _code("agents/ultron/hackingtool/scripts/ht_run.py")
     assert '"-lc"' not in c and "'-lc'" not in c
+
+
+# ── injection smell-test (_probe_injection) — patches the _http_get seam ─────────
+import agents.ultron.ultron_agent as _ult
+
+
+class _FakeResp:
+    def __init__(self, text, code=200):
+        self.text = text; self.status_code = code
+
+
+def _patch_http(monkeypatch, getter):
+    monkeypatch.setattr(_ult, "_http_get", getter)
+
+
+def test_probe_flags_sqli_and_xss(monkeypatch):
+    def _get(url, timeout=8):
+        if "id=" in url and "%27" in url:
+            return _FakeResp("Microsoft OLE DB Provider error: Unclosed quotation mark")
+        if "jvz9xqk7z" in url:
+            return _FakeResp("echo jvz9xqk7z<x> back to you")
+        return _FakeResp("normal body " * 50)
+    _patch_http(monkeypatch, _get)
+    res = _ult.ultron_agent._probe_injection(
+        ["http://t.com/n.aspx?id=1", "http://t.com/s.aspx?q=x", "http://t.com/flat.html"])
+    tmpls = {r["template"] for r in res}
+    assert "sqli-error-based" in tmpls and "xss-reflected" in tmpls
+    assert not any("flat.html" in r["url"] for r in res)
+    assert all(r["validated"] and r["evidence"] and r["repro"] for r in res)
+
+
+def test_probe_sqli_anomaly(monkeypatch):
+    def _get(url, timeout=8):
+        if "%27" in url:
+            return _FakeResp("", 500)              # quote -> empty 500, no error string
+        return _FakeResp("healthy page " * 100, 200)
+    _patch_http(monkeypatch, _get)
+    res = _ult.ultron_agent._probe_injection(["http://t.com/n.aspx?id=1"])
+    sqli = [r for r in res if r["template"] == "sqli-error-based"]
+    assert sqli and "500" in sqli[0]["evidence"]

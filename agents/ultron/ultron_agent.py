@@ -294,6 +294,13 @@ _SQL_ERROR_SIGNS = re.compile(
 _XSS_MARKER = "jvz9xqk7z"
 
 
+def _http_get(url: str, timeout: int = 8):
+    """Thin HTTP GET seam used by the injection probe (kept module-level so tests
+    can patch it directly instead of monkeypatching global sys.modules)."""
+    import requests
+    return requests.get(url, timeout=timeout)
+
+
 def _parse_nuclei_findings(raw: str) -> list:
     """Parse nuclei output lines → structured findings.
     Nuclei format: [template-id] [protocol] [severity] url [extra]"""
@@ -1145,7 +1152,7 @@ Report:"""
         import time
         from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
         try:
-            import requests
+            import requests  # noqa: F401 — availability check; calls go via _http_get
         except Exception:
             return []
         out, seen, tested = [], set(), 0
@@ -1161,7 +1168,7 @@ Report:"""
                 # baseline response for this URL (once) — for differential detection
                 base_status, base_len = None, None
                 try:
-                    b = requests.get(u, timeout=8)
+                    b = _http_get(u)
                     base_status, base_len = b.status_code, len(b.text or "")
                 except Exception:
                     pass
@@ -1175,7 +1182,7 @@ Report:"""
                         q = qs.copy(); q[i] = (k, (v or "") + "'")
                         purl = urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(q), ""))
                         time.sleep(0.1)
-                        r = requests.get(purl, timeout=8)
+                        r = _http_get(purl)
                         body = r.text or ""
                         m = _SQL_ERROR_SIGNS.search(body)
                         # anomaly: baseline was a healthy 200-with-body, but the quote
@@ -1205,7 +1212,7 @@ Report:"""
                         q = qs.copy(); q[i] = (k, marker)
                         purl = urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(q), ""))
                         time.sleep(0.1)
-                        r = requests.get(purl, timeout=8)
+                        r = _http_get(purl)
                         if marker in (r.text or ""):
                             out.append({
                                 "template": "xss-reflected", "severity": "medium",
