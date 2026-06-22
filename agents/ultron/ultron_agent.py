@@ -2509,9 +2509,21 @@ Report:"""
             if _nvd_key:
                 hdrs["apiKey"] = _nvd_key
             req = urllib.request.Request(url, headers=hdrs)
-            throttle("nvd")   # 50/30s (key) or 5/30s (no key) — space to avoid 429
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                data = _json.loads(resp.read().decode())
+            data, last_err = None, None
+            for attempt in range(2):              # NVD (esp. keyless) is slow/flaky — one retry
+                try:
+                    throttle("nvd")   # 50/30s (key) or 5/30s (no key) — space to avoid 429
+                    with urllib.request.urlopen(req, timeout=30) as resp:
+                        data = _json.loads(resp.read().decode())
+                    break
+                except Exception as e:
+                    last_err = e
+                    if attempt == 0:
+                        import time as _t
+                        _t.sleep(2)
+            if data is None:
+                hint = "" if _nvd_key else " — set NVD_API_KEY in .env for a faster, more reliable quota"
+                return {"success": False, "message": f"NVD slow/unreachable: {str(last_err)[:50]}{hint}", "data": {}}
         except Exception as e:
             return {"success": False, "message": f"NVD API error: {e}", "data": {}}
 
