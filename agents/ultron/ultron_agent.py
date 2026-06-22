@@ -1116,6 +1116,63 @@ class UltronAgent:
                 "data": {"tool": tool, "found": found, "count": len(found)}}
 
     # =====================================
+    # SPA RENDER-CRAWL (the attack surface a passive crawler can't see)
+    # =====================================
+    def spa_crawl(self, target: str, timeout: int = 30) -> dict:
+        """Render a JS/SPA target in headless Chromium and capture its LIVE attack surface:
+        rendered DOM links + every same-origin XHR/fetch API call the app makes — the real
+        endpoints (e.g. /api/..., /rest/..., /graphql) that katana's passive crawl misses on
+        React/Angular/Vue apps. Reuses the bundled Playwright; graceful if absent. Found
+        endpoints are recorded to the target profile. Authorized targets only."""
+        if not target:
+            return {"success": False, "message": "Target missing.", "data": {"urls": []}}
+        base = _resolve_scheme(target)
+        try:
+            from playwright.sync_api import sync_playwright
+        except Exception:
+            return {"success": False, "data": {"urls": []},
+                    "message": "Playwright not installed (pip install playwright && playwright install chromium)."}
+        from urllib.parse import urlsplit, urljoin
+        host = urlsplit(base).netloc
+        apis, links = set(), set()
+        print(f"[ULTRON] SPA render-crawl: {base}")
+        try:
+            with sync_playwright() as p:
+                b = p.chromium.launch(headless=True)
+                page = b.new_page()
+
+                def _on_req(r):
+                    try:
+                        if r.resource_type in ("xhr", "fetch") and urlsplit(r.url).netloc == host:
+                            apis.add(r.url.split("#")[0])
+                    except Exception:
+                        pass
+                page.on("request", _on_req)
+                page.goto(base, wait_until="networkidle", timeout=timeout * 1000)
+                page.wait_for_timeout(2500)            # let late XHRs fire
+                for a in page.query_selector_all("a[href]"):
+                    href = (a.get_attribute("href") or "").strip()
+                    if not href or href.startswith(("javascript:", "mailto:", "tel:", "#")):
+                        continue
+                    full = href if href.startswith("http") else urljoin(base, href)
+                    if urlsplit(full).netloc == host:
+                        links.add(full.split("#")[0])
+                b.close()
+        except Exception as e:
+            return {"success": False, "data": {"urls": []},
+                    "message": f"SPA crawl failed (target slow/unreachable?): {str(e)[:80]}"}
+        allu = sorted(set(links) | set(apis))
+        try:
+            from core import target_profiles
+            if allu:
+                target_profiles.record_endpoints(_clean_site(target), allu)
+        except Exception:
+            pass
+        return {"success": True,
+                "message": f"SPA render-crawl: {len(links)} link(s) + {len(apis)} API endpoint(s) on {base}.",
+                "data": {"urls": allu, "links": sorted(links), "apis": sorted(apis), "count": len(allu)}}
+
+    # =====================================
     # FULL PIPELINE (Phase 24)
     # Nmap → Subfinder → Httpx → Nuclei → Katana → Screenshot
     # =====================================
@@ -1160,6 +1217,16 @@ class UltronAgent:
         katana_r = self.katana_crawl(target)
         sections["katana"] = katana_r.get("message", "Skipped.")
         urls = katana_r.get("data", {}).get("urls", [])
+
+        # SPA fallback: a passive crawl returning ~nothing usually means a JS app — render it
+        # in headless Chromium and capture the live API surface katana can't see.
+        if len([u for u in urls if "?" in u or u.count("/") > 3]) < 3:
+            spa = self.spa_crawl(target)
+            spa_urls = spa.get("data", {}).get("urls", [])
+            if spa_urls:
+                urls = sorted(set(urls) | set(spa_urls))
+                sections["katana"] = (sections.get("katana", "") + "  |  " + spa.get("message", "")).strip()
+                print(f"[ULTRON] SPA enrichment: surface now {len(urls)} endpoint(s).")
 
         # ── Screenshot ──
         shot_r = self.take_screenshot(base_url)
@@ -2662,6 +2729,9 @@ Report:"""
 
             elif action == "content_discovery":
                 return self.content_discovery(target, parameters.get("wordlist", ""))
+
+            elif action == "spa_crawl":
+                return self.spa_crawl(target)
 
             elif action == "take_screenshot":
                 return self.take_screenshot(target)
