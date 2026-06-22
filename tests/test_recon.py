@@ -205,3 +205,17 @@ def test_plan_skips_irrelevant():
     txt = "\n".join(_ult.ultron_agent._build_test_plan("t.com", [], {"sections": {}, "urls": []}))
     assert "GraphQL" not in txt and "file upload" not in txt.lower()
     assert "No auto-findings" in txt
+
+
+def test_scope_guard_flags_saas():
+    assert _ult._scope_check("foo.herokuapp.com")
+    assert not _ult._scope_check("example.com")
+
+def test_content_discovery_parsers(monkeypatch):
+    import shutil
+    monkeypatch.setattr(shutil, "which", lambda t: "/x/ffuf" if t == "ffuf" else None)
+    monkeypatch.setattr(_ult, "run_cmd", lambda *a, **k: "admin\nlogin\nbackup\n")
+    r = _ult.ultron_agent.content_discovery("http://t.com")
+    assert r["data"]["count"] == 3 and r["data"]["tool"] == "ffuf"
+    monkeypatch.setattr(shutil, "which", lambda t: None)
+    assert not _ult.ultron_agent.content_discovery("http://t.com")["success"]
