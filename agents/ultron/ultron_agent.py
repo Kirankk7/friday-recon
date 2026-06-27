@@ -346,12 +346,53 @@ def _is_destructive(url: str, method: str = "GET") -> bool:
     return bool(_DESTRUCTIVE_PATH.search(urlsplit(url or "").path))
 
 
+import time as _rg_time, threading as _rg_threading
+_RATE_LOCK = _rg_threading.Lock()
+_RATE_LAST = [0.0]
+
+
+def _rate_gate(url: str = ""):
+    """Pace EVERY outbound request to the program's rate limit (data/roe.json rate_limit_rps),
+    enforced at the one seam all probe/crawl/idor/post loops flow through — so a strict
+    bug-bounty cap (e.g. 1win = 5 req/s) is honored everywhere, not just nuclei. A conservative
+    default (3 req/s) protects PUBLIC hosts if scope-setup was forgotten; localhost = unthrottled
+    (dogfood speed). Single-threaded by design, so concurrency stays at 1 (well under any cap)."""
+    try:
+        from urllib.parse import urlsplit
+        import ipaddress, json as _json, os as _os
+        rps = 0.0
+        try:
+            roe = _json.load(open(_os.path.join("data", "roe.json"), encoding="utf-8"))
+            rps = float(roe.get("rate_limit_rps") or 0)
+        except Exception:
+            rps = 0.0
+        if not rps:                                   # no program limit set
+            host = urlsplit(url).hostname or ""
+            local = host in ("localhost", "127.0.0.1", "::1")
+            try:
+                local = local or ipaddress.ip_address(host).is_private
+            except Exception:
+                pass
+            rps = 0.0 if local else 3.0               # safe default for public live targets
+        if rps <= 0:
+            return
+        interval = 1.0 / rps
+        with _RATE_LOCK:
+            wait = interval - (_rg_time.time() - _RATE_LAST[0])
+            if wait > 0:
+                _rg_time.sleep(wait)
+            _RATE_LAST[0] = _rg_time.time()
+    except Exception:
+        pass
+
+
 def _http_get(url: str, timeout: int = 8, headers: dict = None, allow_redirects: bool = True):
     """Thin HTTP GET seam used by the injection probe (kept module-level so tests
     can patch it directly instead of monkeypatching global sys.modules).
     headers carries a session Cookie / auth header for authenticated targets;
     allow_redirects=False lets the open-redirect probe read the Location header."""
     import requests
+    _rate_gate(url)
     return requests.get(url, timeout=timeout, headers=headers or None,
                         allow_redirects=allow_redirects)
 
@@ -360,8 +401,10 @@ def _http_post(url: str, data=None, json_body=None, timeout: int = 8, headers: d
     """POST seam for the POST-body injection probe (patchable in tests).
     data = form dict; json_body = JSON dict. headers carries the session."""
     import requests
+    _rate_gate(url)
     return requests.post(url, data=data, json=json_body, timeout=timeout,
                          headers=headers or None)
+
 
 
 # Param-name -> extra test type. Dork-derived (TakSec param classes): the param's
