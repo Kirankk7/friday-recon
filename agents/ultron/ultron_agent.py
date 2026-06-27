@@ -2492,6 +2492,14 @@ Report:"""
         date_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
         _order = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
 
+        # defensive: a malformed finding (a missing template/severity/url key from any probe)
+        # must not KeyError-crash the whole report. Normalize before rendering.
+        for f in findings or []:
+            f.setdefault("template", "unknown")
+            f.setdefault("severity", "info")
+            f.setdefault("url", "")
+            f.setdefault("_gate", {"report": False, "tier": "P5", "score": 0, "confidence": "weak"})
+
         reportable = [f for f in findings if f.get("_gate", {}).get("report")]
         dropped = [f for f in findings if not f.get("_gate", {}).get("report")]
         reportable.sort(key=lambda f: _order.get(f.get("severity"), 9))
