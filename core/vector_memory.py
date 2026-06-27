@@ -27,7 +27,7 @@ def _tokenize(text: str) -> list[str]:
 
 
 def _tfidf_vec(tokens: list[str], idf: dict) -> dict:
-    """Compute TF-IDF-style vector (term → weight)."""
+    """Compute TF-IDF-style vector (term -> weight)."""
     tf = {}
     for t in tokens:
         tf[t] = tf.get(t, 0) + 1

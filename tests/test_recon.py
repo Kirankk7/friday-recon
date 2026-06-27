@@ -266,3 +266,35 @@ def test_setup_scope_and_roe_filter(monkeypatch, tmp_path):
     g_sqli = _ult.ultron_agent._validate_finding(
         {"template": "sqli-error-based", "severity": "high", "url": "http://x/p?id=1", "validated": True, "cve": ""}, {})
     assert not g_xss["report"] and g_sqli["report"]
+
+
+# ── friday-recon CLI dogfood regressions (2026-06-27) ──────────────────────────
+import agents.ultron.ultron_agent as _ult
+
+
+def test_cli_output_cp1252_printable():
+    """Every method message the CLI prints (_run -> print) must encode to cp1252 —
+    a non-cp1252 char crashes a real Windows console. Regression for the → / ✓✗★⚠ fixes."""
+    U = _ult.ultron_agent
+    msgs = []
+    # report builder (had → and ★/⚠/✓)
+    f = [{"template": "sqli-error-based", "severity": "high", "url": "http://t/p?id=1",
+          "cve": None, "validated": True, "evidence": "db error", "repro": ["x"]}]
+    f[0]["_gate"] = U._validate_finding(f[0], {})
+    msgs.append(U._format_bb_report("t", f, {}, {"urls": ["http://t/p?id=1"]}, True))
+    msgs.append("\n".join(U._build_test_plan("t", f, {"urls": ["http://t/p?id=1"]})))
+    msgs.append(U.find_programs().get("message", ""))            # had ★
+    msgs.append(U.defensive_scan().get("message", ""))
+    msgs.append(U.session_list().get("message", ""))
+    for m in msgs:
+        m.encode("cp1252")          # raises if any non-cp1252 char -> the console-crash bug
+
+
+def test_cli_scope_setup_missing_file_is_graceful():
+    """`cli.py scope-setup /no/such/file` must print a clean error + exit 1, not a traceback."""
+    import subprocess, sys
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    p = subprocess.run([sys.executable, "cli.py", "scope-setup", "/no/such/policy.txt"],
+                       cwd=root, capture_output=True, env=dict(os.environ, JARVIS_CI="1"), timeout=60)
+    assert b"Traceback" not in p.stderr, "scope-setup leaked a traceback on a missing file"
+    assert p.returncode == 1

@@ -51,7 +51,7 @@ def _params_from_request(raw_req: str, url: str) -> set:
 
 
 def parse_export(path: str) -> dict:
-    """Parse a Burp XML export → endpoint inventory."""
+    """Parse a Burp XML export -> endpoint inventory."""
     path = os.path.expanduser(path)
     if not os.path.exists(path):
         return {"success": False, "message": "I couldn't find that Burp export, boss.", "data": {}}

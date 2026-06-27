@@ -78,7 +78,12 @@ def main() -> int:
     if c == "cve":         return _run("search_cve", keyword=a.keyword)
     if c == "bugbounty":   return _run("bug_bounty", target=a.target, force=getattr(a,"force",False))
     if c == "burp":        return _run("ingest_burp", path=a.path)
-    if c == "scope-setup": return _run("setup_scope", text=open(a.policyfile, encoding="utf-8").read())
+    if c == "scope-setup":
+        try:
+            _txt = open(a.policyfile, encoding="utf-8").read()
+        except OSError as e:
+            print(f"Can't read policy file '{a.policyfile}': {e}"); return 1
+        return _run("setup_scope", text=_txt)
     if c == "kb":          return _run("kb_methodology", query=a.query)
     if c == "github-hunt": return _run("github_hunt", org=a.org)
     if c == "profile":     return _run("target_profile", target=a.host)
