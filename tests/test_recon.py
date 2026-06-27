@@ -163,7 +163,7 @@ def _patch_http(monkeypatch, getter):
 
 
 def test_probe_flags_sqli_and_xss(monkeypatch):
-    def _get(url, timeout=8):
+    def _get(url, timeout=8, headers=None, allow_redirects=True):
         if "id=" in url and "%27" in url:
             return _FakeResp("Microsoft OLE DB Provider error: Unclosed quotation mark")
         if "jvz9xqk7z" in url:
@@ -179,7 +179,7 @@ def test_probe_flags_sqli_and_xss(monkeypatch):
 
 
 def test_probe_sqli_anomaly(monkeypatch):
-    def _get(url, timeout=8):
+    def _get(url, timeout=8, headers=None, allow_redirects=True):
         if "%27" in url:
             return _FakeResp("", 500)              # quote -> empty 500, no error string
         return _FakeResp("healthy page " * 100, 200)

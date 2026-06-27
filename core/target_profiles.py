@@ -156,6 +156,34 @@ def add_note(host: str, note: str) -> dict:
     return {"success": True, "message": f"Noted on {host}."}
 
 
+def record_hypothesis(host: str, endpoint: str, vuln_class: str, rationale: str = "",
+                      status: str = "untested") -> dict:
+    """Exploitability memory (Tier-2): store a security HYPOTHESIS per endpoint, not just an
+    observation — the hunter-notebook brain. status: untested / testing / candidate / confirmed
+    / failed. Dedup+update by (endpoint, vuln_class); a stronger status overwrites a weaker one."""
+    host = _norm(host)
+    if not host or not endpoint or not vuln_class:
+        return {"success": False, "message": "Need host, endpoint, and a vuln class."}
+    _RANK = {"untested": 0, "testing": 1, "candidate": 2, "failed": 3, "confirmed": 4}
+    with _lock:
+        data = _load()
+        p = _get(data, host)
+        hyps = p.setdefault("hypotheses", [])
+        for h in hyps:
+            if h.get("endpoint") == endpoint and h.get("class") == vuln_class:
+                if _RANK.get(status, 0) >= _RANK.get(h.get("status", "untested"), 0):
+                    h["status"] = status
+                if rationale:
+                    h["rationale"] = rationale
+                h["ts"] = _now()
+                _save(data)
+                return {"success": True, "message": f"Updated hypothesis: {vuln_class} @ {endpoint} -> {status}"}
+        hyps.append({"endpoint": endpoint, "class": vuln_class, "rationale": rationale,
+                     "status": status, "reviewed": False, "ts": _now()})
+        _save(data)
+    return {"success": True, "message": f"Hypothesis: {vuln_class} @ {endpoint} ({status})"}
+
+
 def summary(host: str) -> dict:
     host = _norm(host)
     data = _load()
@@ -179,6 +207,12 @@ def summary(host: str) -> dict:
             lines.append(f"{label}: " + ", ".join(vals[:6]) + (" …" if len(vals) > 6 else ""))
     if p.get("evidence"):
         lines.append(f"Evidence captured: {len(p['evidence'])} item(s).")
+    hyps = [h for h in p.get("hypotheses", []) if h.get("status") not in ("failed",)]
+    if hyps:
+        lines.append("Hypotheses (exploitability memory):")
+        for h in hyps[:8]:
+            r = f" — {h['rationale']}" if h.get("rationale") else ""
+            lines.append(f"  [{h.get('status','untested')}] {h['class']} @ {h['endpoint']}{r}")
     if p["scans"]:
         lines.append("Recent scans: " + ", ".join(s["kind"] for s in p["scans"][-5:]))
     if p["notes"]:
