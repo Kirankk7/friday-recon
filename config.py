@@ -134,3 +134,10 @@ JARVIS_TOKEN = os.getenv("JARVIS_TOKEN", "")
 # - No Groq
 # - No Together
 # All inference runs locally on this machine
+
+# ── threat_intel + wirings (synced from JARVIS 2026-06-26) ──
+ABUSE_CH_API_KEY  = os.getenv("ABUSE_CH_API_KEY", "")
+ABUSEIPDB_API_KEY = os.getenv("ABUSEIPDB_API_KEY", "")
+OTX_API_KEY       = os.getenv("OTX_API_KEY", "")
+DEFENSE_INTEL     = os.getenv("DEFENSE_INTEL", "1") not in ("0", "false", "False", "")
+URL_GUARD_INTEL   = os.getenv("URL_GUARD_INTEL", "0") not in ("0", "false", "False", "")

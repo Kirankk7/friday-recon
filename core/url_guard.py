@@ -95,6 +95,29 @@ def assert_safe_url(url: str) -> None:
         raise ValueError(f"Blocked unsafe URL: {reason}")
 
 
+def threat_check(url: str) -> tuple:
+    """Reputation pre-check (#8): look the URL/host up in threat feeds before navigating —
+    block known-malware destinations. OFF by default (config.URL_GUARD_INTEL) since it adds
+    latency and the best domain/URL feeds need keys (DShield covers IPs no-key). Returns
+    (safe, reason); fail-open (safe) on any error so it never breaks navigation."""
+    try:
+        from config import URL_GUARD_INTEL as _on
+    except Exception:
+        _on = False
+    if not _on:
+        return True, ""
+    try:
+        from urllib.parse import urlsplit
+        from core import threat_intel
+        host = urlsplit(url).hostname or url
+        v = threat_intel.lookup(host)
+        if (v.get("verdict") or "").lower() == "malicious":
+            return False, f"threat-intel flagged {host} as MALICIOUS ({v.get('summary', '')[:80]})"
+    except Exception:
+        pass
+    return True, ""
+
+
 def safe_get(url: str, max_redirects: int = 5, timeout: int = 15):
     """
     SSRF-safe HTTP GET: validates the URL AND every redirect hop before
@@ -103,6 +126,9 @@ def safe_get(url: str, max_redirects: int = 5, timeout: int = 15):
     Use this instead of letting a library follow redirects unchecked.
     """
     import requests
+    _ok, _why = threat_check(url)                       # reputation pre-check (opt-in, fail-open)
+    if not _ok:
+        raise ValueError(_why)
     current = url
     for _ in range(max_redirects + 1):
         assert_safe_url(current)                       # validate before each fetch
