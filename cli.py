@@ -20,6 +20,14 @@ import sys
 import os
 import argparse
 
+# cp1252 console guard (the root fix) — never let a non-ASCII char (emoji, arrow, or a
+# real target's accented title / payload / writeup text) crash output on a Windows console.
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from agents.ultron.ultron_agent import ultron_agent
