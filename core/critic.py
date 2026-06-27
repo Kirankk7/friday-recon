@@ -6,7 +6,7 @@ hallucinations / missing steps / unsupported claims / errors, then revise only i
 the critic flags something. One extra LLM round; never touches the token-streaming
 chat path (that's why it's a standalone helper, not baked into ask_llm's stream).
 
-Used by Ultron's security-report synthesis. Off by default → set CRITIC_ENABLED.
+Used by Ultron's security-report synthesis. Off by default -> set CRITIC_ENABLED.
 """
 
 # Agents whose long-form output is worth a review pass.

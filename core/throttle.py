@@ -17,10 +17,10 @@ import time
 import threading
 
 # Per-API minimum seconds between calls. (limit headroom baked in.)
-#   nvd:        50 req/30s w/ key (→0.6s)   · 5 req/30s without (→6s)
-#   virustotal: 4 req/min  (→15s)
-#   football:   10 req/min (→6s)
-#   github:     5000/hr w/ token (→0.72s)   · 60/hr without (→60s)
+#   nvd:        50 req/30s w/ key (->0.6s)   · 5 req/30s without (->6s)
+#   virustotal: 4 req/min  (->15s)
+#   football:   10 req/min (->6s)
+#   github:     5000/hr w/ token (->0.72s)   · 60/hr without (->60s)
 _LIMITS = {
     "nvd":        {"with_key": 0.7,  "no_key": 6.5},
     "virustotal": {"with_key": 15.5, "no_key": 15.5},

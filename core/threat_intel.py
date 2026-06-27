@@ -183,9 +183,9 @@ def lookup(ioc: str) -> dict:
 
     flagged = ", ".join(s["source"] for s in mal + susp)
     summary = {
-        "malicious": f"⚠ MALICIOUS — {ioc} flagged by {flagged}.",
-        "suspicious": f"⚠ SUSPICIOUS — {ioc} flagged by {flagged}.",
-        "clean": f"✓ CLEAN — {ioc}: no source flagged it ({len(checked)} checked).",
+        "malicious": f"! MALICIOUS — {ioc} flagged by {flagged}.",
+        "suspicious": f"! SUSPICIOUS — {ioc} flagged by {flagged}.",
+        "clean": f"+ CLEAN — {ioc}: no source flagged it ({len(checked)} checked).",
         "unknown": f"? UNKNOWN — no source could check {ioc} (add API keys; DShield covers IPs no-key).",
     }[verdict]
     return {"ioc": ioc, "kind": kind, "verdict": verdict, "summary": summary, "sources": sources}

@@ -1142,7 +1142,7 @@ class UltronAgent:
         if gh_pocs:
             lines.append(f"\nGitHub PoCs ({len(gh_pocs)}):")
             for p in sorted(gh_pocs, key=lambda x: -x["stars"])[:6]:
-                lines.append(f"  ★{p['stars']}  {p['name']}")
+                lines.append(f"  *{p['stars']}  {p['name']}")
                 lines.append(f"         {p['url']}")
                 if p["desc"]:
                     lines.append(f"         {p['desc']}")
@@ -3842,7 +3842,7 @@ Report:"""
         r = _ti.lookup(ioc)
         lines = [r["summary"], ""]
         for s in r["sources"]:
-            mark = {"malicious": "✗", "suspicious": "!", "clean": "✓",
+            mark = {"malicious": "x", "suspicious": "!", "clean": "+",
                     "nokey": "·", "skip": "·", "error": "·", "unknown": "·"}.get(s["status"], "·")
             lines.append(f"  {mark} {s['source']}: {s['detail']}")
         return {"success": True, "message": "\n".join(lines),
@@ -3929,13 +3929,13 @@ Report:"""
             return {"success": True, "message": f"{label}: no analysis data available yet.", "data": {"kind": kind, "stats": stats}}
 
         if mal > 0:
-            verdict = f"⚠ MALICIOUS — {mal}/{total} engines flagged {label}"
+            verdict = f"! MALICIOUS — {mal}/{total} engines flagged {label}"
             if susp:
                 verdict += f" ({susp} also suspicious)"
         elif susp > 0:
-            verdict = f"⚠ SUSPICIOUS — {susp}/{total} engines flagged {label}, 0 malicious"
+            verdict = f"! SUSPICIOUS — {susp}/{total} engines flagged {label}, 0 malicious"
         else:
-            verdict = f"✓ CLEAN — {label}: 0/{total} detections"
+            verdict = f"+ CLEAN — {label}: 0/{total} detections"
 
         # Friendly name / reputation extras
         rep = attrs.get("reputation")
@@ -4147,7 +4147,7 @@ Report:"""
         _sev_rank = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "?": 9}
         findings.sort(key=lambda f: (_sev_rank.get(f["severity"], 9)))
 
-        lines = [f"⚠ {len(findings)} CVE-asset correlation(s) found:"]
+        lines = [f"! {len(findings)} CVE-asset correlation(s) found:"]
         for f in findings:
             svc = ", ".join(f["services"])
             lines.append(
@@ -4389,7 +4389,7 @@ Report:"""
             out = (res.get("stdout") or "").strip()
             summary = out[:1500] if out else "(no output)"
             return {"success": True,
-                    "message": f"{tool_id} [{res.get('backend')}] ✓\n{summary}",
+                    "message": f"{tool_id} [{res.get('backend')}] +\n{summary}",
                     "data": res}
         if status in ("refused", "no_backend", "fallback"):
             return {"success": False, "message": res.get("message", status), "data": res}

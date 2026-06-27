@@ -53,7 +53,7 @@ def _chunk(text: str) -> list:
         else:
             if buf:
                 chunks.append(buf)
-            # paragraph itself too big → hard-split
+            # paragraph itself too big -> hard-split
             while len(p) > _CHUNK_CHARS:
                 chunks.append(p[:_CHUNK_CHARS])
                 p = p[_CHUNK_CHARS:]

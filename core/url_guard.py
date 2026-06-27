@@ -73,7 +73,7 @@ def is_safe_url(url: str) -> tuple[bool, str]:
     if _is_private_ip(host):
         return False, f"private/reserved IP '{host}'"
 
-    # Resolve hostname → reject if ANY resolved address is internal
+    # Resolve hostname -> reject if ANY resolved address is internal
     # (defends against DNS rebinding to internal ranges)
     try:
         infos = socket.getaddrinfo(host, None)

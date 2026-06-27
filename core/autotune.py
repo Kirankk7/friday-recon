@@ -137,7 +137,7 @@ def _save_feedback(state: dict) -> None:
 
 
 def _learned_adjustments(context: str) -> dict:
-    """Delta per param learned from feedback: direction from downvoted→upvoted EMA."""
+    """Delta per param learned from feedback: direction from downvoted->upvoted EMA."""
     prof = _load_feedback().get(context)
     if not prof:
         return {}
@@ -162,7 +162,7 @@ def tune(prompt: str, history: list | None = None, context: str | None = None) -
     for k, delta in _learned_adjustments(ctx).items():
         params[k] = params[k] + delta
     params = {k: _clamp(k, v) for k, v in params.items()}
-    # long conversation → bump repeat penalty slightly
+    # long conversation -> bump repeat penalty slightly
     if history and len(history) > 10:
         params["repeat_penalty"] = _clamp("repeat_penalty", params["repeat_penalty"] + 0.05)
     with _lock:
