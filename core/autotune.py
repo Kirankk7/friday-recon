@@ -87,7 +87,7 @@ _EMA_ALPHA = 0.3            # weight for new feedback observation
 _MIN_SAMPLES = 3           # samples before learned adjustments kick in
 _MAX_LEARN_WEIGHT = 0.5    # learned adjustments cap at 50% influence
 
-# remembers the last autotuned call so a 👍/👎 hook can attribute feedback
+# remembers the last autotuned call so a +1/-1 hook can attribute feedback
 _LAST = {"context": None, "params": None}
 
 
@@ -173,7 +173,7 @@ def tune(prompt: str, history: list | None = None, context: str | None = None) -
 def record_feedback(rating: int, context: str | None = None,
                     params: dict | None = None) -> dict:
     """
-    Update per-context EMA from a 👍 (+1) / 👎 (-1) rating on the last response.
+    Update per-context EMA from a +1 (+1) / -1 (-1) rating on the last response.
     Returns the updated profile summary.
     """
     with _lock:

@@ -239,7 +239,7 @@ def run_docker(command: str, timeout: int, image: str,
 
     tokens = shlex.split(command)
     if use_entrypoint:
-        # Image has a proper ENTRYPOINT (e.g. instrumentisto/nmap → nmap).
+        # Image has a proper ENTRYPOINT (e.g. instrumentisto/nmap -> nmap).
         # Strip the binary name if it's the first token — entrypoint adds it.
         image_binary = image.split("/")[-1].split(":")[0]
         if tokens and tokens[0] == image_binary:

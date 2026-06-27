@@ -374,7 +374,7 @@ class FileAgent:
         if not path:
             return {"success": False, "message": "File path missing.", "data": {}}
 
-        # URL input → SSRF guard with redirect re-validation (W3). We fetch via
+        # URL input -> SSRF guard with redirect re-validation (W3). We fetch via
         # safe_get (validates every hop) then hand the bytes to MarkItDown, so the
         # library never follows a redirect to an internal host behind our back.
         if re.match(r"https?://", path, re.IGNORECASE):
@@ -531,7 +531,7 @@ class FileAgent:
         if not hunks:
             return {"success": False, "message": "No valid unified-diff hunks found.", "data": {}}
 
-        # Apply hunks → build new content, verifying context/removed lines
+        # Apply hunks -> build new content, verifying context/removed lines
         result = list(orig)
         offset = 0
         added = removed = 0
