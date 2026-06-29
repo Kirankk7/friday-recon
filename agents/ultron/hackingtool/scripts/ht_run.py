@@ -345,7 +345,11 @@ def main():
             return
         command = cmds[0]
         if not args.install and args.args:
-            command = f"{command} {args.args}"
+            # The index often records `<tool> -h` as the run sample. When the
+            # caller supplies real args, drop a help flag so it doesn't
+            # short-circuit the actual invocation (e.g. `subfinder -h -d x`).
+            base = re.sub(r"\s+(?:-h|--help)\b", "", command)
+            command = f"{base} {args.args}"
 
     caps = tool["capabilities"]
 
