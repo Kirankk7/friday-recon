@@ -43,13 +43,18 @@ def mutate_url(url: str) -> list:
                             "method": "GET", "body": None,
                             "why": f"swap object id in query param '{k}'"})
     segs = [s for s in parts.path.split("/") if s]
-    if segs and re.fullmatch(r"\d+", segs[-1]):
-        for nv in _neighbours(segs[-1]):
-            np = "/" + "/".join(segs[:-1] + [nv])
-            out.append({"label": f"path .../{segs[-1]} -> /{nv}",
-                        "url": urlunsplit((parts.scheme, parts.netloc, np, parts.query, "")),
-                        "method": "GET", "body": None,
-                        "why": "swap object id in last path segment"})
+    if segs:
+        # numeric id in the last path segment, with an optional format/extension suffix
+        # (REST/Rails-style: 123, 6778217.json, 42.xml) — keep the suffix on the swapped id.
+        m = re.fullmatch(r"(\d+)(\.\w+)?", segs[-1])
+        if m:
+            core, ext = m.group(1), (m.group(2) or "")
+            for nv in _neighbours(core):
+                np = "/" + "/".join(segs[:-1] + [nv + ext])
+                out.append({"label": f"path .../{segs[-1]} -> /{nv}{ext}",
+                            "url": urlunsplit((parts.scheme, parts.netloc, np, parts.query, "")),
+                            "method": "GET", "body": None,
+                            "why": "swap object id in last path segment"})
     return out
 
 

@@ -2761,10 +2761,17 @@ Report:"""
         _sc = _scope_check(target)
         if _sc:
             print(f"[ULTRON][SCOPE] {_sc}")
-        if _in_scope(target) == "out" and not force:
+        _scope = _in_scope(target)
+        if _scope == "out" and not force:
             return {"success": False, "data": {"target": target},
                     "message": f"REFUSED: '{target}' is OUT OF SCOPE per data/scope.json. "
                                f"Pass force=True (or --force) only if you're certain it's authorized."}
+        # PORTED FROM JARVIS S18 (dogfood): refuse unknown-scope too -> was multi-minute hang.
+        if _scope == "unknown" and not force:
+            return {"success": False, "data": {"target": target, "scope": "unknown"},
+                    "message": f"REFUSED: '{target}' is NOT in data/scope.json. Won't auto-run an "
+                               f"active scan against an unconfirmed target. Either add it to scope "
+                               f"(`scope add {target}`) or pass force=True (--force) to override."}
 
         # ── Stage 1: Recon pipeline (nmap->subfinder->httpx->nuclei->katana) ──
         pipeline = self.full_pipeline(target, cookie=cookie)
@@ -2910,9 +2917,14 @@ Report:"""
         _sc = _scope_check(target)
         if _sc:
             print(f"[ULTRON][SCOPE] {_sc}")
-        if _in_scope(target) == "out" and not force:
+        _scope = _in_scope(target)
+        if _scope == "out" and not force:
             return {"success": False, "data": {"target": target},
                     "message": f"REFUSED: '{target}' is OUT OF SCOPE per data/scope.json. Pass --force if authorized."}
+        if _scope == "unknown" and not force:
+            return {"success": False, "data": {"target": target, "scope": "unknown"},
+                    "message": f"REFUSED: '{target}' is NOT in data/scope.json. Won't auto-run active "
+                               f"recon against an unconfirmed target. `scope add {target}` or --force."}
 
         date_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
         sections = {}
