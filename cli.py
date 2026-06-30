@@ -30,6 +30,62 @@ except Exception:
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# Enable ANSI colour on Windows terminals (no-op elsewhere).
+if os.name == "nt":
+    os.system("")
+
+__version__ = "1.0.0"
+
+# ── ANSI colours ──
+_G  = "\033[92m"   # bright green
+_DG = "\033[32m"   # green
+_C  = "\033[96m"   # cyan
+_Y  = "\033[93m"   # yellow
+_DIM = "\033[90m"  # grey
+_B  = "\033[1m"
+_R  = "\033[0m"    # reset
+
+_ART = r"""
+███████╗██████╗ ██╗██████╗  █████╗ ██╗   ██╗
+██╔════╝██╔══██╗██║██╔══██╗██╔══██╗╚██╗ ██╔╝
+█████╗  ██████╔╝██║██║  ██║███████║ ╚████╔╝
+██╔══╝  ██╔══██╗██║██║  ██║██╔══██║  ╚██╔╝
+██║     ██║  ██║██║██████╔╝██║  ██║   ██║
+╚═╝     ╚═╝  ╚═╝╚═╝╚═════╝ ╚═╝  ╚═╝   ╚═╝   """
+
+
+def _ollama_status() -> str:
+    """Quick non-blocking check — is the local reasoning engine up?"""
+    import socket
+    try:
+        with socket.create_connection(("localhost", 11434), timeout=0.4):
+            return f"{_G}●{_R} Engine: Ollama qwen2.5 {_G}online{_R}"
+    except Exception:
+        return f"{_DIM}●{_R} Engine: Ollama {_Y}offline{_R} {_DIM}(reasoning degrades gracefully){_R}"
+
+
+def print_banner() -> None:
+    print(f"{_B}{_G}{_ART}{_R}")
+    print(f"   {_DG}R E C O N{_R}  {_DIM}—{_R}  Local-first AI recon & bug-bounty toolkit  {_DIM}v{__version__}{_R}\n")
+    print(f"   {_DIM}Maintainer:{_R} Kiran {_DIM}·{_R} {_C}https://github.com/Kirankk7/friday-recon{_R}")
+    print(f"   {_Y}⚠ Authorized targets only — Ultron core, same engine as JARVIS{_R}")
+    print(f"   {_ollama_status()}\n")
+    print(f"{_B} Available commands:{_R}")
+    rows = [
+        ("recon <t>",      "full pipeline: nmap → subfinder → httpx → nuclei → katana"),
+        ("bugbounty <t>",  "hunt → validation gate → platform-ready PoC report"),
+        ("idor <url>",     "cross-account IDOR/BOLA oracle (owner vs attacker)"),
+        ("graphql <url>",  "introspection + privileged-mutation hunt"),
+        ("discover <t>",   "content discovery — brute-force hidden paths/dirs"),
+        ("kb \"<q>\"",       "methodology knowledge base (grounded, cited)"),
+        ("threat-intel <i>","IOC reputation across feeds (IP/domain/URL/hash)"),
+    ]
+    for cmd, desc in rows:
+        print(f"   {_G}{cmd:<18}{_R}{_DIM}{desc}{_R}")
+    print(f"   {_DIM}…and 18 more — run{_R} {_C}python cli.py -h{_R} {_DIM}for the full list.{_R}\n")
+    print(f"{_DG} ▸ python cli.py <command> <target>{_R}\n")
+
+
 from agents.ultron.ultron_agent import ultron_agent
 
 
@@ -41,6 +97,11 @@ def _run(action: str, **params) -> int:
 
 
 def main() -> int:
+    # No command → show the banner + menu (like a splash), then exit clean.
+    if len(sys.argv) == 1 or sys.argv[1] in ("banner", "--banner"):
+        print_banner()
+        return 0
+
     p = argparse.ArgumentParser(prog="friday-recon",
                                 description="Local AI-assisted recon / bug-bounty toolkit (Ultron core).")
     sub = p.add_subparsers(dest="cmd", required=True)
