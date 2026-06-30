@@ -40,16 +40,36 @@ ollama pull qwen2.5:7b          # local reasoning model
 ## Use
 
 ```bash
-python cli.py scan example.com
-python cli.py recon example.com
-python cli.py cve log4j
-python cli.py bugbounty example.com         # → validated PoC report on your Desktop
-python cli.py burp export.xml               # Burp Community "Save items" XML
-python cli.py kb "how do I test for subdomain takeover"
-python cli.py github-hunt acme
+# recon
+python cli.py scan example.com              # nmap port scan (with scan diffing)
+python cli.py recon example.com             # full pipeline: nmap→subfinder→httpx→nuclei→katana
+python cli.py discover example.com          # content discovery (ffuf/gobuster)
+python cli.py spacrawl example.com          # render SPA → capture API surface
+python cli.py crawl example.com             # multi-page BFS crawl → parameterized URLs
+
+# bug bounty
+python cli.py bugbounty example.com         # full hunt → validated PoC report on your Desktop
+python cli.py graphql https://t.com/graphql # GraphQL introspection + privileged-mutation hunt
+python cli.py idor https://t.com/api/1 --owner userA --attacker userB   # IDOR/BOLA check
+python cli.py session-set bob <cookie>      # register a principal for authz testing
+python cli.py sessions                      # list authz-test sessions
+python cli.py evidence https://t.com/find   # re-probe a finding → capture evidence
+
+# intel
+python cli.py cve log4j                     # NVD CVE lookup
+python cli.py threat-intel 1.2.3.4          # IOC reputation across feeds (IP/domain/URL/hash)
+python cli.py kb "how do I test for subdomain takeover"   # methodology KB (cited)
+python cli.py playbook "ssrf"               # recall attack techniques (proven + KB + PortSwigger)
+
+# data / memory
+python cli.py burp export.xml               # ingest Burp Community "Save items" XML
+python cli.py github-hunt acme              # org repo secret hunt
 python cli.py profile example.com           # what we know about a target, across hunts
-python cli.py evidence https://t.com/finding
+python cli.py targets                       # list profiled targets
+python cli.py scope                         # show in/out-of-scope rules
+python cli.py scope-setup policy.txt        # parse a program policy → set scope
 python cli.py defensive                     # blue-team host scan
+python cli.py wordlist                      # list bundled wordlists
 ```
 
 ## Security posture
@@ -63,7 +83,7 @@ injection is primary), controls, and weaknesses with fixes. Hardening baked in: 
 ## Tests
 
 ```bash
-pytest -q          # 17 tests, offline (no Ollama/network needed)
+pytest -q          # offline (no Ollama/network needed)
 ```
 CI runs on every push (`.github/workflows/test.yml`).
 
