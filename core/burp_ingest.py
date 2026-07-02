@@ -61,31 +61,59 @@ def parse_export(path: str) -> dict:
     except Exception as e:
         return {"success": False, "message": f"That doesn't look like a Burp XML export: {str(e)[:60]}", "data": {}}
 
-    endpoints, params, hosts, methods = {}, set(), set(), {}
-    tags = {"apis": set(), "jwt": set(), "auth": set(), "graphql": set(), "tech": set()}
     items = root.findall(".//item")
+    records = []
     for it in items:
         url = (it.findtext("url") or "").strip()
-        method = (it.findtext("method") or "GET").strip().upper()
-        status = (it.findtext("status") or "").strip()
         if not url:
             continue
+        records.append({
+            "url": url,
+            "method": it.findtext("method") or "GET",
+            "status": it.findtext("status") or "",
+            "request": _decode(it.find("request")),
+            "response": _decode(it.find("response")),
+        })
+
+    if not records:
+        return {"success": False, "message": "No HTTP items found in that export.", "data": {}}
+
+    inv = _build_inventory(records)
+    inv["items"] = len(items)   # back-compat: count ALL xml items, incl url-less ones
+    tags = inv["tags"]
+    tagbits = [f"{len(v)} {k}" for k, v in tags.items() if v]
+    msg = (f"Ingested {len(items)} Burp items: {len(inv['endpoints'])} unique endpoints "
+           f"across {len(inv['hosts'])} host(s), {len(inv['params'])} parameters. "
+           f"Methods: {', '.join(f'{m} x{c}' for m, c in sorted(inv['methods'].items()))}."
+           + (f" Tagged: {', '.join(tagbits)}." if tagbits else ""))
+    return {"success": True, "message": msg, "data": inv}
+
+
+def _build_inventory(records: list) -> dict:
+    """Shared core: a list of {url, method, status, request, response} records ->
+    the endpoint / param / auth-tag inventory. Used by BOTH the Burp XML path and the
+    live-capture proxy (F1), so their output schema is identical by construction.
+    Pure + engineering-only — no model, no network."""
+    endpoints, params, hosts, methods = {}, set(), set(), {}
+    tags = {"apis": set(), "jwt": set(), "auth": set(), "graphql": set(), "tech": set()}
+    for r in records:
+        url = (r.get("url") or "").strip()
+        if not url:
+            continue
+        method = (r.get("method") or "GET").strip().upper()
+        status = str(r.get("status") or "").strip()
         sp = urlsplit(url)
         hosts.add(sp.netloc)
         base = f"{sp.scheme}://{sp.netloc}{sp.path}"
         endpoints[f"{method} {base}"] = {"url": base, "method": method, "status": status}
         methods[method] = methods.get(method, 0) + 1
-        req = _decode(it.find("request"))
-        resp = _decode(it.find("response"))
+        req = r.get("request") or ""
+        resp = r.get("response") or ""
         params.update(_params_from_request(req, url))
         _tag(base, sp.path, status, req, resp, tags)
-
-    if not endpoints:
-        return {"success": False, "message": "No HTTP items found in that export.", "data": {}}
-
     tags = {k: sorted(v) for k, v in tags.items() if v}
-    inv = {
-        "items": len(items),
+    return {
+        "items": len(records),
         "hosts": sorted(hosts),
         "endpoints": sorted(endpoints.keys()),
         "urls": sorted({e["url"] for e in endpoints.values()}),
@@ -93,12 +121,6 @@ def parse_export(path: str) -> dict:
         "methods": methods,
         "tags": tags,
     }
-    tagbits = [f"{len(v)} {k}" for k, v in tags.items() if v]
-    msg = (f"Ingested {len(items)} Burp items: {len(inv['endpoints'])} unique endpoints "
-           f"across {len(hosts)} host(s), {len(params)} parameters. "
-           f"Methods: {', '.join(f'{m} x{c}' for m, c in sorted(methods.items()))}."
-           + (f" Tagged: {', '.join(tagbits)}." if tagbits else ""))
-    return {"success": True, "message": msg, "data": inv}
 
 
 def _tag(url: str, path: str, status: str, req: str, resp: str, tags: dict) -> None:

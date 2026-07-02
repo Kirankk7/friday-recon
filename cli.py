@@ -139,6 +139,11 @@ def main() -> int:
     sub.add_parser("scope", help="Show the current in/out-of-scope rules (data/scope.json)")
     sub.add_parser("defensive", help="Blue-team host scan (new ports / suspicious procs)")
     sub.add_parser("wordlist", help="List bundled wordlists").add_argument("kind", nargs="?", default="")
+    # F1 — live-capture proxy
+    sub.add_parser("proxy", help="Live-capture proxy → data/capture/<host>.json (needs: pip install mitmproxy)").add_argument("--port", type=int, default=8081)
+    add("capture", "Show the captured endpoint inventory for a host", "host")
+    sp_sc = add("scan-captured", "IDOR/BOLA across captured object-id endpoints (owner=captured)", "host")
+    sp_sc.add_argument("--attacker", default="userB")
 
     a = p.parse_args()
     c = a.cmd
@@ -172,6 +177,21 @@ def main() -> int:
     if c == "scope":       return _run("scope_status")
     if c == "defensive":   return _run("defensive_scan")
     if c == "wordlist":    return _run("kb_wordlist", kind=a.kind)
+    if c == "proxy":
+        from core.live_capture import _run_proxy
+        return _run_proxy(a.port)
+    if c == "capture":
+        from core import live_capture as lc
+        inv = lc.load_capture(a.host)
+        if not inv:
+            print(f"No capture for {a.host}. Run 'proxy', browse the target, then retry."); return 1
+        print(f"{a.host}: {len(inv.get('endpoints', []))} endpoints, "
+              f"{len(inv.get('params', []))} params, tags={list(inv.get('tags', {}).keys())}")
+        return 0
+    if c == "scan-captured":
+        from core import live_capture as lc
+        r = lc.scan_captured(a.host, attacker=a.attacker)
+        print(r.get("message", "")); return 0 if r.get("success") else 1
     p.print_help(); return 1
 
 
