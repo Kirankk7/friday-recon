@@ -298,3 +298,33 @@ def test_cli_scope_setup_missing_file_is_graceful():
                        cwd=root, capture_output=True, env=dict(os.environ, JARVIS_CI="1"), timeout=60)
     assert b"Traceback" not in p.stderr, "scope-setup leaked a traceback on a missing file"
     assert p.returncode == 1
+
+
+def test_f1_live_capture_shared_schema():
+    """F1 port: live_capture builds the SAME inventory schema as burp_ingest (by construction)."""
+    from core import live_capture as lc, burp_ingest as bi
+    recs = [{"url": "http://t.local/rest/basket/6?x=1", "method": "GET", "status": 200,
+             "request": "GET /rest/basket/6?x=1 HTTP/1.1\r\nCookie: sid=9\r\n"
+                        "Authorization: Bearer eyJhbGci.def12345678.ghi90\r\n\r\n",
+             "response": "HTTP/1.1 200\r\nServer: nginx\r\nContent-Type: application/json\r\n\r\n{}"}]
+    assert lc.build_from_records(recs) == bi._build_inventory(recs)
+    assert lc.id_record_urls(recs) == ["http://t.local/rest/basket/6?x=1"]
+
+
+def test_f1_capture_roundtrip_and_register():
+    """F1 port: save/load a capture + auto-register the 'captured' principal from traffic."""
+    from core import live_capture as lc, session_manager as sm
+    host = "f1recon.local"
+    try:
+        recs = [{"url": f"http://{host}/rest/basket/6", "method": "GET", "status": 200,
+                 "request": "GET /rest/basket/6 HTTP/1.1\r\nCookie: sessionid=SECRET; a=b\r\n\r\n",
+                 "response": "HTTP/1.1 200\r\n\r\n{}"}]
+        inv = lc.save_capture(host, recs)
+        assert any("/rest/basket/6" in u for u in inv.get("urls", []))
+        assert lc.load_capture(host) == inv
+        assert "sessionid=SECRET" in (sm.get("captured") or {}).get("cookie", "")
+    finally:
+        sm.delete("captured")
+        f = lc._host_file(host)
+        if os.path.exists(f):
+            os.remove(f)

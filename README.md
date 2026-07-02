@@ -49,6 +49,9 @@ python cli.py crawl example.com             # multi-page BFS crawl → parameter
 
 # bug bounty
 python cli.py bugbounty example.com         # full hunt → validated PoC report on your Desktop
+python cli.py proxy --port 8081             # live-capture proxy (browse authed → inventory)
+python cli.py capture example.com           # show the captured endpoint/param inventory
+python cli.py scan-captured example.com     # IDOR/BOLA across captured object-id endpoints
 python cli.py graphql https://t.com/graphql # GraphQL introspection + privileged-mutation hunt
 python cli.py idor https://t.com/api/1 --owner userA --attacker userB   # IDOR/BOLA check
 python cli.py session-set bob <cookie>      # register a principal for authz testing
