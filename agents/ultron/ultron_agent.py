@@ -2528,6 +2528,26 @@ Report:"""
                 "reasons": reasons, "confidence": confidence,
                 "drop": None if report else f"failed quality gate ({score}/7)"}
 
+    def _write_evidence_bundle(self, folder: str, target: str, reportable: list) -> int:
+        """F3 — write one canonical Evidence Object (json + platform-ready submission md)
+        per gate-passed finding into <report-folder>/evidence/. Deterministic, no LLM."""
+        from core import evidence as _ev
+        ev_dir = os.path.join(folder, "evidence")
+        os.makedirs(ev_dir, exist_ok=True)
+        n = 0
+        for i, f in enumerate(reportable, 1):
+            obj = _ev.build(f, target)
+            slug = re.sub(r"[^a-z0-9]+", "-", (f.get("template", "finding") or "finding").lower()).strip("-")
+            base = os.path.join(ev_dir, f"{i:02d}_{slug or 'finding'}")
+            with open(base + ".json", "w", encoding="utf-8") as fh:
+                fh.write(_ev.to_json(obj))
+            with open(base + ".md", "w", encoding="utf-8") as fh:
+                fh.write(_ev.to_markdown(obj))
+            n += 1
+        if n:
+            print(f"[ultron] evidence bundle: {n} object(s) -> {ev_dir}")
+        return n
+
     def _format_bb_report(self, target, findings, exploits_map, pipeline_data, validated):
         """Build a platform-ready PoC report.md — only gate-passed findings get
         a full write-up; filtered ones are listed transparently. Each finding
@@ -2581,6 +2601,15 @@ Report:"""
                 lines.append(f"- **Status:** {'Confirmed live' if f.get('validated') else 'Reported by scanner (unconfirmed)'}")
                 lines.append(f"- **Confidence:** {g.get('confidence', 'candidate').upper()} "
                              f"({g['score']}/7 quality checks)")
+                # F3 — CWE + preliminary CVSS per finding (from the canonical Evidence Object).
+                try:
+                    from core import evidence as _ev
+                    _obj = _ev.build(f, target)
+                    lines.append(f"- **Weakness:** {_obj['cwe']['id']} — {_obj['cwe']['name']}")
+                    lines.append(f"- **CVSS 3.1 (preliminary):** {_obj['cvss']['score']} "
+                                 f"({_obj['cvss']['severity']}) `{_obj['cvss']['vector']}`")
+                except Exception:
+                    pass
                 if f.get("evidence"):
                     lines.append(f"- **Evidence:** {f['evidence']}")
                 if f.get("cve"):
@@ -2862,6 +2891,15 @@ Report:"""
         # ── Stage 5: Structured PoC report ──
         report = self._format_bb_report(target, findings, exploits_map, pdata, validated)
         saved = self.save_report(f"bugbounty_{target}", report)
+
+        # ── Stage 5.5 (F3): canonical Evidence Object (json + submission md) per gate-passed finding ──
+        try:
+            _folder = os.path.dirname(saved) if saved else None
+            if _folder:
+                self._write_evidence_bundle(_folder, target,
+                                            [f for f in findings if f.get("_gate", {}).get("report")])
+        except Exception as _e:
+            print(f"[ultron] evidence bundle skipped: {_e}")
 
         # Phase 63 — remember this target across hunts
         try:

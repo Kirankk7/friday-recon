@@ -328,3 +328,17 @@ def test_f1_capture_roundtrip_and_register():
         f = lc._host_file(host)
         if os.path.exists(f):
             os.remove(f)
+
+
+def test_f3_evidence_object_parity():
+    """F3 parity: canonical Evidence Object (versioned, CWE + preliminary CVSS + curl)."""
+    from core import evidence
+    o = evidence.build({"template": "sqli-error-based", "severity": "high", "url": "http://t/s",
+                        "evidence": "db error", "repro": ["inject '"], "validated": True,
+                        "_gate": {"tier": "P2", "confidence": "reproduced"}}, "t")
+    assert o["schema_version"] == 1
+    assert o["cwe"]["id"] == "CWE-89"
+    assert o["cvss"]["preliminary"] is True
+    assert evidence.lint(o) == []
+    md = evidence.to_markdown(o)
+    assert "CWE-89" in md and "CVSS 3.1" in md and "curl" in md
