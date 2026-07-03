@@ -10,7 +10,7 @@ import socket
 from core.llm import ask_llm
 from core.throttle import throttle
 from core.critic import refine as _critic_refine
-from agents.ultron import report   # Phase B: report/analysis cluster (free functions)
+from agents.ultron import report, gate   # Phase B: report/analysis cluster + validation gate
 
 _CVE_FILE = "data/cve_watchlist.json"
 
@@ -1720,25 +1720,8 @@ Report:"""
                             f"Saved to {host}'s profile."),
                 "data": {"url": url, "confirmed": confirmed, "evidence": evidence}}
 
-    # =====================================
-    # VALIDATION GATE (Phase 60 — adapted from shuvonsec/claude-bug-bounty)
-    # =====================================
-    # Never-submit blacklist: template-id fragments that are noise / informational
-    # and get auto-closed as N/A on bug-bounty platforms. Findings matching these
-    # are dropped from the report regardless of severity.
-    _NEVER_SUBMIT = (
-        "ssl", "tls-version", "tech-detect", "tech-stack", "fingerprint",
-        "missing-header", "security-header", "http-missing", "x-frame",
-        "version-disclosure", "version-detect", "waf-detect", "wafw00f",
-        "favicon", "robots-txt", "sitemap", "default-page", "dns-",
-        "dmarc", "spf-", "cookie-without", "cors-misconfig-detect",
-        "metatag", "openapi", "swagger-api", "weak-cipher",
-    )
-    # severity -> bug-bounty payout/priority tier (HackerOne-style)
-    _PAYOUT_TIER = {
-        "critical": "P1 (Critical)", "high": "P2 (High)", "medium": "P3 (Medium)",
-        "low": "P4 (Low)", "info": "P5 (Informational)",
-    }
+    # VALIDATION GATE (Phase 60) — moved to agents/ultron/gate.py (Phase B):
+    # NEVER_SUBMIT / PAYOUT_TIER constants + validate_finding().
 
     def _probe_injection(self, urls: list, max_urls: int = 30, max_params: int = 8,
                          cookie: str = "", headers: dict = None) -> list:
@@ -2364,70 +2347,8 @@ Report:"""
         return out
 
     def _validate_finding(self, f: dict, exploits_map: dict) -> dict:
-        """
-        7-question quality gate. Returns {report, score, tier, reasons, drop}.
-        Kills weak/noise findings before they reach the report.
-        """
-        tmpl = (f.get("template") or "").lower()
-        sev = (f.get("severity") or "info").lower()
-        url = f.get("url") or ""
-        cve = f.get("cve") or ""
-
-        # hard blacklist -> never submit
-        if any(bad in tmpl for bad in self._NEVER_SUBMIT):
-            return {"report": False, "score": 0, "tier": self._PAYOUT_TIER.get(sev, "P5"),
-                    "reasons": [], "drop": "informational/noise class (never-submit list)"}
-
-        # program-specific out-of-scope types (from a pasted policy via setup_scope -> roe.json)
-        _oos_types = _load_roe().get("out_of_scope_types", [])
-        _blob = (tmpl + " " + (f.get("evidence") or "")).lower()
-        for _t in _oos_types:
-            _tag = _t.replace("-", "").replace("_", "")
-            if _t and (_t in _blob or _tag in _blob.replace("-", "").replace("_", "")):
-                return {"report": False, "score": 0, "tier": self._PAYOUT_TIER.get(sev, "P5"),
-                        "reasons": [], "drop": f"out-of-scope for this program ({_t})"}
-
-        reasons, score = [], 0
-        # Q1 — meaningful severity (info-only alone is not worth a report)
-        if sev in ("critical", "high", "medium", "low"):
-            score += 1; reasons.append("has actionable severity")
-        # Q2 — concrete location
-        if url:
-            score += 1; reasons.append("has a concrete URL/location")
-        # Q3 — confirmed reachable (re-probe in validate stage)
-        if f.get("validated") is True:
-            score += 1; reasons.append("confirmed live on re-probe")
-        # Q4 — exploitability (CVE with a known PoC/exploit)
-        if cve and exploits_map.get(cve):
-            score += 1; reasons.append("known public exploit/PoC exists")
-        elif cve:
-            score += 1; reasons.append("maps to a tracked CVE")
-        # Q5 — real impact (not purely informational template)
-        if sev in ("critical", "high", "medium"):
-            score += 1; reasons.append("impact is more than informational")
-        # Q6 — specificity (template names a real class, not a generic probe)
-        if tmpl and "detect" not in tmpl and "panel" not in tmpl:
-            score += 1; reasons.append("specific vulnerability, not a generic probe")
-        # Q7 — severity-weighted confidence
-        if sev in ("critical", "high") and (f.get("validated") is True or cve):
-            score += 1; reasons.append("high severity AND corroborated")
-
-        # report only if it clears the bar (>=3 of 7), or any confirmed crit/high
-        report = score >= 3 or (sev in ("critical", "high") and f.get("validated") is True)
-        # B4 confidence ladder — a finding is not "confirmed" off one signal. Cross-principal
-        # bugs (IDOR/BOLA) and unreproduced anomalies are CANDIDATES needing human confirmation;
-        # a directly-reproduced high-severity signal is the strongest we claim locally.
-        if f.get("validated") is True and score >= 5:
-            confidence = "reproduced"      # probed + reproduced + corroborated
-        elif f.get("validated") is True:
-            confidence = "supported"       # a direct signal, but thin corroboration
-        elif report:
-            confidence = "candidate"       # report-worthy lead, NOT yet proven (e.g. IDOR needs 2 accounts)
-        else:
-            confidence = "weak"
-        return {"report": report, "score": score, "tier": self._PAYOUT_TIER.get(sev, "P5"),
-                "reasons": reasons, "confidence": confidence,
-                "drop": None if report else f"failed quality gate ({score}/7)"}
+        return gate.validate_finding(f, exploits_map,
+                                     _load_roe().get("out_of_scope_types", []))
 
     def _write_evidence_bundle(self, folder: str, target: str, reportable: list) -> int:
         """F3 — write one canonical Evidence Object (json + platform-ready submission md)
