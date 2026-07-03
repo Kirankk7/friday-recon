@@ -27,6 +27,23 @@ PAYOUT_TIER = {
 }
 
 
+# Triage weights — a deterministic expected-value proxy for "work the best bug first".
+# Base by severity, scaled by how sure we are (confidence), + a bonus when a public
+# exploit exists (turns a report into a demonstrable compromise). No CVSS/LLM needed.
+_TRIAGE_BASE = {"critical": 90, "high": 70, "medium": 45, "low": 20, "info": 5}
+_TRIAGE_CONF = {"reproduced": 1.0, "supported": 0.85, "candidate": 0.6, "weak": 0.3}
+
+
+def triage(severity: str, confidence: str, has_exploit: bool = False) -> int:
+    """Deterministic triage priority 0-100: severity base x confidence, + exploit bonus.
+    Ranks reportable findings so the hunter works the highest-value bug first."""
+    base = _TRIAGE_BASE.get((severity or "").lower(), 5)
+    score = base * _TRIAGE_CONF.get(confidence, 0.3)
+    if has_exploit:
+        score += 8
+    return max(0, min(100, round(score)))
+
+
 def validate_finding(f: dict, exploits_map: dict, oos_types: list = None) -> dict:
     """
     7-question quality gate. Returns {report, score, tier, reasons, drop}.
@@ -89,6 +106,7 @@ def validate_finding(f: dict, exploits_map: dict, oos_types: list = None) -> dic
         confidence = "candidate"       # report-worthy lead, NOT yet proven (e.g. IDOR needs 2 accounts)
     else:
         confidence = "weak"
+    priority = triage(sev, confidence, has_exploit=bool(cve and exploits_map.get(cve)))
     return {"report": report, "score": score, "tier": PAYOUT_TIER.get(sev, "P5"),
-            "reasons": reasons, "confidence": confidence,
+            "reasons": reasons, "confidence": confidence, "priority": priority,
             "drop": None if report else f"failed quality gate ({score}/7)"}

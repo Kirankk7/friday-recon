@@ -73,6 +73,31 @@ def test_gate_drops_noise():
                                  "cve": "", "validated": False}, {})
         assert not g["report"], tmpl
 
+def test_gate_triage_priority():
+    """Deterministic triage priority: confirmed high outranks unproven critical (+ exploit bonus)."""
+    from agents.ultron import gate
+    assert gate.triage("critical", "reproduced", True) > gate.triage("high", "reproduced") \
+        > gate.triage("critical", "candidate") > gate.triage("low", "weak") >= 0
+    assert gate.triage("critical", "reproduced", True) <= 100
+    g = U._validate_finding({"template": "sqli", "severity": "high",
+                             "url": "http://t/p?id=1", "validated": True, "cve": ""}, {})
+    assert g["priority"] == gate.triage("high", "reproduced")
+
+def test_report_triage_ordering():
+    """Report ranks findings by triage priority (best bug first), exec summary names top."""
+    findings = [
+        {"template": "cve-critical-unproven", "severity": "critical", "url": "http://t/a",
+         "cve": "", "validated": False},
+        {"template": "sqli-error-based", "severity": "high", "url": "http://t/p?id=1",
+         "cve": "", "validated": True, "evidence": "db err"},
+    ]
+    for f in findings:
+        f["_gate"] = U._validate_finding(f, {})
+    rpt = U._format_bb_report("t.com", findings, {}, {"urls": []}, True)
+    assert rpt.index("sqli-error-based") < rpt.index("cve-critical-unproven")
+    assert "Top priority: **sqli-error-based**" in rpt and "Priority:" in rpt
+    rpt.encode("cp1252")
+
 
 # ── KB retrieval (offline) ──────────────────────────────────────────────────────
 from core import security_kb as kb

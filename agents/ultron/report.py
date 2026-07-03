@@ -256,7 +256,10 @@ def format_bb_report(target, findings, exploits_map, pipeline_data, validated):
 
     reportable = [f for f in findings if f.get("_gate", {}).get("report")]
     dropped = [f for f in findings if not f.get("_gate", {}).get("report")]
-    reportable.sort(key=lambda f: _order.get(f.get("severity"), 9))
+    # Triage order — highest expected-value bug first (priority desc, severity as tiebreak),
+    # so the hunter works the best finding first, not just the alphabetically-first critical.
+    reportable.sort(key=lambda f: (-f.get("_gate", {}).get("priority", 0),
+                                   _order.get(f.get("severity"), 9)))
 
     tier_counts = {}
     for f in reportable:
@@ -275,6 +278,12 @@ def format_bb_report(target, findings, exploits_map, pipeline_data, validated):
         f"- Reportable findings: **{len(reportable)}** ({tier_line})",
         f"- Filtered by validation gate: {len(dropped)} (noise / unconfirmed / informational)",
         f"- Re-probe validation run: {'yes' if validated else 'no'}",
+    ]
+    if reportable:
+        _top = reportable[0]
+        lines.append(f"- Top priority: **{_top['template']}** "
+                     f"({_top['_gate'].get('priority', 0)}/100 triage, {_top['_gate']['tier']})")
+    lines += [
         "",
         "## Findings",
     ]
@@ -292,6 +301,7 @@ def format_bb_report(target, findings, exploits_map, pipeline_data, validated):
             lines.append(f"- **Status:** {'Confirmed live' if f.get('validated') else 'Reported by scanner (unconfirmed)'}")
             lines.append(f"- **Confidence:** {g.get('confidence', 'candidate').upper()} "
                          f"({g['score']}/7 quality checks)")
+            lines.append(f"- **Priority:** {g.get('priority', 0)}/100 (triage: severity x confidence, +exploit)")
             # F3 — CWE + preliminary CVSS per finding (from the canonical Evidence Object).
             try:
                 from core import evidence as _ev
