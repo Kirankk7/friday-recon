@@ -418,3 +418,37 @@ def test_f4_bug_bounty_threads_timeline(tmp_path):
                 delattr(U, name)
             except Exception:
                 pass
+
+
+def test_f4_replay_parity(tmp_path):
+    """F4 parity: replay reruns a recorded run — full hunt from target, per-step probe from
+    the persisted endpoints artifact, refuses unknown/missing runs."""
+    from core import timeline, replay
+    from agents.ultron import ultron_agent as _ult
+    U = _ult.ultron_agent
+    timeline._RUNS_DIR = str(tmp_path)
+    tl = timeline.start_run("t.example")
+    tl.write_artifact("endpoints.json", ["http://t.example/a?id=1"])
+    tl.finish()
+    stubs = {"bug_bounty": lambda *a, **k: {"success": True, "data": {"run_id": "NEWRUN", "report": "r"}},
+             "_probe_injection": lambda urls, **k: [{"template": "sqli", "url": urls[0]}] if urls else [],
+             "_probe_path_params": lambda *a, **k: [],
+             "_probe_stored_xss": lambda *a, **k: [],
+             "_probe_post": lambda *a, **k: []}
+    for name, fn in stubs.items():
+        setattr(U, name, fn)
+    try:
+        full = replay.replay(tl.run_id)
+        assert full["success"] and full["data"].get("new_run_id") == "NEWRUN"
+        probe = replay.replay(tl.run_id, "probe")
+        assert probe["success"] and len(probe["data"]["findings"]) == 1
+        bogus = replay.replay(tl.run_id, "nope")
+        assert not bogus["success"] and "not replayable" in bogus["message"]
+        missing = replay.replay("does-not-exist")
+        assert not missing["success"] and "No run" in missing["message"]
+    finally:
+        for name in stubs:
+            try:
+                delattr(U, name)
+            except Exception:
+                pass

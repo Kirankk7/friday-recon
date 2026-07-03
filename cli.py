@@ -147,6 +147,10 @@ def main() -> int:
     # F4 — execution timeline (read side)
     sp_tl = sub.add_parser("timeline", help="Show a run's execution timeline (no arg = list recent runs)")
     sp_tl.add_argument("run_id", nargs="?", default="")
+    # F4 — replay a recorded run (reruns an ACTIVE scan on the recorded target)
+    sp_rp = sub.add_parser("replay", help="Rerun a recorded run (--step full|recon|probe)")
+    sp_rp.add_argument("run_id")
+    sp_rp.add_argument("--step", default="full")
 
     a = p.parse_args()
     c = a.cmd
@@ -199,6 +203,14 @@ def main() -> int:
         from core import timeline as tl
         print(tl.render(a.run_id) if a.run_id else tl.render_list())
         return 0
+    if c == "replay":
+        from core import replay
+        r = replay.replay(a.run_id, step=a.step)
+        print(r.get("message", ""))
+        nid = r.get("data", {}).get("new_run_id")
+        if nid:
+            print(f"new run: {nid}")
+        return 0 if r.get("success") else 1
     p.print_help(); return 1
 
 
