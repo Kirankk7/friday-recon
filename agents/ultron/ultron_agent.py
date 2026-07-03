@@ -14,6 +14,7 @@ from agents.ultron import report, gate   # Phase B: report/analysis cluster + va
 from agents.ultron import evidence as evidence_bundle   # Phase B: F3 evidence-bundle writer
 from agents.ultron import cve as cve_lookup   # Phase B: CVE lookup / NVD cluster
 from agents.ultron.cve import cve_product_keywords as _cve_product_keywords, match_products as _match_products
+from agents.ultron import knowledge   # Phase B: playbook recall / remember-technique
 
 _CVE_FILE = "data/cve_watchlist.json"
 
@@ -2846,31 +2847,10 @@ Report:"""
     # VIRUSTOTAL SCAN (Phase 30b)
     # =====================================
     def playbook_recall(self, query: str = "", stack: str = "") -> dict:
-        """Recall attack techniques from the growing playbook (proven + KB + PortSwigger),
-        ranked for the query/stack. Proven techniques surface first."""
-        from core import playbook as pb
-        hits = pb.recall(query=query, stack=stack, top_k=8)
-        if not hits:
-            s = pb.stats()
-            return {"success": True, "data": {"hits": []},
-                    "message": f"No playbook match for '{query}'. ({s['total']} techniques loaded.)"}
-        lines = [f"Playbook — {len(hits)} technique(s) for '{query or stack}':", ""]
-        for e in hits:
-            tag = "PROVEN" if e.get("validated") else ("VERIFY" if e.get("verify") else "ref")
-            lines.append(f"[{tag}] {e['class']}: {e['technique']}")
-            if e.get("payload"): lines.append(f"   payload: {e['payload']}")
-            if e.get("tell"):    lines.append(f"   tell:    {e['tell']}")
-            if e.get("ref"):     lines.append(f"   ref:     {e['ref']}")
-        return {"success": True, "message": "\n".join(lines), "data": {"hits": hits}}
+        return knowledge.playbook_recall(query, stack)
 
     def remember_technique(self, text: str, vuln_class: str = "manual", stack: str = "") -> dict:
-        """Manually add a technique YOU found to the playbook (your creative finds become
-        JARVIS's permanent knowledge)."""
-        from core import playbook as pb
-        r = pb.add(vuln_class, text, stack=stack, source="user", validated=True)
-        if r["added"]:
-            return {"success": True, "message": f"Remembered ({r['id']}): {text[:80]}", "data": r}
-        return {"success": True, "message": f"Already known ({r['reason']}).", "data": r}
+        return knowledge.remember_technique(text, vuln_class, stack)
 
     @staticmethod
     def _render_text(url: str, timeout: int = 30) -> str:
