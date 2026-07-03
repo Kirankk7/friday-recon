@@ -113,6 +113,22 @@ def test_impact_data_driven():
     assert "`/api/user/5`" in line2 and "Candidate" in line2
     line.encode("cp1252"); line2.encode("cp1252")
 
+def test_report_dedup_clustering():
+    """Same class on N endpoints of one host collapses to ONE grouped finding (parity)."""
+    from agents.ultron import report
+    mk = lambda i, host="t": {"template": "sqli-error-based", "severity": "high",
+        "url": f"http://{host}/p?id={i}", "cve": "", "evidence": "db err",
+        "_gate": {"report": True, "tier": "P2", "priority": 70, "score": 6, "confidence": "reproduced"}}
+    d = report.dedup_findings([mk(0), mk(1), mk(2)])
+    assert len(d) == 1 and len(d[0]["_also_affected"]) == 2
+    assert len(report.dedup_findings([mk(0), mk(0, host="other")])) == 2
+    orig = mk(0)
+    report.dedup_findings([orig, mk(1)])
+    assert "_also_affected" not in orig
+    rpt = report.format_bb_report("t.com", [dict(mk(i)) for i in range(3)], {}, {"urls": []}, True)
+    assert "Also affected (2)" in rpt and "Reportable findings: **1**" in rpt
+    rpt.encode("cp1252")
+
 
 # ── KB retrieval (offline) ──────────────────────────────────────────────────────
 from core import security_kb as kb

@@ -148,6 +148,34 @@ def impact_line(f: dict) -> str:
     return " ".join(parts)
 
 
+def dedup_findings(findings: list) -> list:
+    """Collapse findings that share the same (template, host) into ONE representative (the
+    highest-priority instance), recording the other affected endpoints under
+    `_also_affected`. Same bug on N endpoints = 1 grouped finding, not N. Order-stable;
+    never mutates the inputs. Findings on different templates/hosts pass through untouched."""
+    from urllib.parse import urlsplit
+    groups, order = {}, []
+    for f in findings:
+        host = urlsplit(f.get("url", "") or "").netloc
+        key = (f.get("template", ""), host)
+        if key not in groups:
+            groups[key] = []
+            order.append(key)
+        groups[key].append(f)
+    out = []
+    for key in order:
+        g = groups[key]
+        if len(g) == 1:
+            out.append(g[0])
+            continue
+        rep = max(g, key=lambda x: x.get("_gate", {}).get("priority", 0))
+        others = [x.get("url", "") for x in g if x is not rep and x.get("url")]
+        rep = dict(rep)
+        rep["_also_affected"] = others
+        out.append(rep)
+    return out
+
+
 def build_test_plan(target: str, findings: list, pipeline_data: dict) -> list:
     """Tailored, honest test plan: fingerprint DB + features from recon, then per
     confirmed finding give subtype payloads + sqlmap, and per relevant feature give
@@ -277,6 +305,8 @@ def format_bb_report(target, findings, exploits_map, pipeline_data, validated):
 
     reportable = [f for f in findings if f.get("_gate", {}).get("report")]
     dropped = [f for f in findings if not f.get("_gate", {}).get("report")]
+    # Cluster duplicate findings (same class on many endpoints -> one grouped entry).
+    reportable = dedup_findings(reportable)
     # Triage order — highest expected-value bug first (priority desc, severity as tiebreak),
     # so the hunter works the best finding first, not just the alphabetically-first critical.
     reportable.sort(key=lambda f: (-f.get("_gate", {}).get("priority", 0),
@@ -319,6 +349,10 @@ def format_bb_report(target, findings, exploits_map, pipeline_data, validated):
             lines.append(f"- **Severity:** {f['severity'].upper()}")
             if f.get("url"):
                 lines.append(f"- **Location:** {f['url']}")
+            if f.get("_also_affected"):
+                _more = f["_also_affected"]
+                lines.append(f"- **Also affected ({len(_more)}):** " + ", ".join(_more[:10])
+                             + (f" ...(+{len(_more) - 10} more)" if len(_more) > 10 else ""))
             lines.append(f"- **Status:** {'Confirmed live' if f.get('validated') else 'Reported by scanner (unconfirmed)'}")
             lines.append(f"- **Confidence:** {g.get('confidence', 'candidate').upper()} "
                          f"({g['score']}/7 quality checks)")
