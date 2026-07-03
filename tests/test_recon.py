@@ -368,3 +368,36 @@ def test_f4_timeline_recorder_parity(tmp_path):
     assert back["events"][1]["outputs"]["alive"] == 121
     assert back["events"][1]["duration_ms"] is not None
     assert tl.run_id in timeline.list_runs()
+
+
+def test_f4_bug_bounty_threads_timeline(tmp_path):
+    """F4 parity: bug_bounty threads the execution timeline — run_id + stage events."""
+    from core import timeline
+    from agents.ultron import ultron_agent as _ult
+    U = _ult.ultron_agent
+    timeline._RUNS_DIR = str(tmp_path)
+    stubs = {"full_pipeline": lambda *a, **k: {"success": True, "data":
+                {"urls": [], "post_endpoints": [], "sections": {"nuclei": "", "httpx": ""}}},
+             "_probe_injection": lambda *a, **k: [],
+             "_probe_post": lambda *a, **k: [],
+             "_probe_path_params": lambda *a, **k: [],
+             "_probe_stored_xss": lambda *a, **k: [],
+             "save_report": lambda *a, **k: ""}
+    for name, fn in stubs.items():
+        setattr(U, name, fn)
+    try:
+        r = U.bug_bounty("t.example", force=True)
+        rid = r["data"].get("run_id")
+        assert rid
+        tl = timeline.load(rid)
+        assert tl and tl["schema_version"] == 1
+        steps = [e["step"] for e in tl["events"]]
+        for s in ("recon", "probe", "gate", "evidence"):
+            assert s in steps, f"missing {s} in {steps}"
+        assert tl["status"] in ("ok", "partial", "failed")
+    finally:
+        for name in stubs:
+            try:
+                delattr(U, name)
+            except Exception:
+                pass

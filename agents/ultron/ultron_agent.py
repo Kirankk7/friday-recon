@@ -2802,10 +2802,28 @@ Report:"""
                                f"active scan against an unconfirmed target. Either add it to scope "
                                f"(`scope add {target}`) or pass force=True (--force) to override."}
 
+        # ── F4: execution timeline (immutable recorder; degrades silently) ──
+        try:
+            from core import timeline as _timeline
+            _tl = _timeline.start_run(target)
+        except Exception:
+            _tl = None
+
+        def _tl_event(step, **kw):
+            if _tl:
+                try:
+                    _tl.record_event(step, **kw)
+                except Exception:
+                    pass
+
         # ── Stage 1: Recon pipeline (nmap->subfinder->httpx->nuclei->katana) ──
         pipeline = self.full_pipeline(target, cookie=cookie)
         pdata = pipeline.get("data", {})
         nuclei_raw = pdata.get("sections", {}).get("nuclei", "")
+        _tl_event("recon", tool="full_pipeline",
+                  outputs={"urls": len(pdata.get("urls", [])),
+                           "post_endpoints": len(pdata.get("post_endpoints", []))},
+                  status="ok" if pipeline.get("success") else "failed")
 
         # ── Stage 2: Parse nuclei -> structured findings ──
         findings = _parse_nuclei_findings(nuclei_raw)
@@ -2832,6 +2850,8 @@ Report:"""
             findings += self._probe_stored_xss(pdata.get("urls", []), cookie=cookie)
         except Exception as e:
             print(f"[ULTRON] stored-XSS probe skipped: {e}")
+        _tl_event("probe", tool="injection/post/path/stored-xss",
+                  outputs={"findings": len(findings)})
 
         # ── Stage 3: CVE -> exploit lookup (critical/high only, capped) ──
         exploits_map = {}
@@ -2845,6 +2865,7 @@ Report:"""
                     exploits_map[f["cve"]] = top.get("url", "") + f" ({ex['data'].get('total', len(pocs))} found)"
             except Exception as e:
                 print(f"[ULTRON] exploit lookup failed for {f['cve']}: {e}")
+        _tl_event("cve", tool="find_exploits", outputs={"exploits": len(exploits_map)})
 
         # ── Stage 4: Validate (re-probe flagged URLs to cut false positives) ──
         validated = False
@@ -2860,12 +2881,17 @@ Report:"""
                     validated = True
                 except Exception as e:
                     print(f"[ULTRON] validate stage skipped: {e}")
+        _tl_event("validate", tool="httpx_probe",
+                  outputs={"validated": sum(1 for f in findings if f.get("validated"))},
+                  status="ok" if validated else "skipped")
 
         # ── Stage 4.5: Quality gate — score each finding, drop noise/weak ones ──
         for f in findings:
             f["_gate"] = self._validate_finding(f, exploits_map)
         reportable = [f for f in findings if f["_gate"]["report"]]
         filtered = len(findings) - len(reportable)
+        _tl_event("gate", tool="_validate_finding",
+                  outputs={"reportable": len(reportable), "filtered": filtered})
 
         # ── Auto-capture: a confirmed finding promotes its technique in the playbook
         #     (novelty-checked; a reference technique that fires on a real target
@@ -2893,13 +2919,17 @@ Report:"""
         saved = self.save_report(f"bugbounty_{target}", report)
 
         # ── Stage 5.5 (F3): canonical Evidence Object (json + submission md) per gate-passed finding ──
+        _bundles = 0
         try:
             _folder = os.path.dirname(saved) if saved else None
             if _folder:
-                self._write_evidence_bundle(_folder, target,
+                _bundles = self._write_evidence_bundle(_folder, target,
                                             [f for f in findings if f.get("_gate", {}).get("report")])
         except Exception as _e:
             print(f"[ultron] evidence bundle skipped: {_e}")
+        _tl_event("evidence", tool="evidence.build",
+                  outputs={"bundles": _bundles},
+                  artifacts=[{"name": os.path.basename(saved), "path": saved, "kind": "report"}] if saved else [])
 
         # Phase 63 — remember this target across hunts
         try:
@@ -2930,6 +2960,14 @@ Report:"""
             f"{('Report saved: ' + saved) if saved else 'Report generation failed.'}"
         )
 
+        _run_id = None
+        if _tl:
+            try:
+                _tl.finish()
+                _run_id = _tl.run_id
+            except Exception:
+                pass
+
         return {
             "success": True,
             "message": voice,
@@ -2940,6 +2978,7 @@ Report:"""
                 "validated": validated,
                 "report": report,
                 "saved_path": saved,
+                "run_id": _run_id,
             }
         }
 
