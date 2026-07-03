@@ -151,6 +151,9 @@ def main() -> int:
     sp_rp = sub.add_parser("replay", help="Rerun a recorded run (--step full|recon|probe)")
     sp_rp.add_argument("run_id")
     sp_rp.add_argument("--step", default="full")
+    # F4 — zip a recorded run into a submission package
+    sp_pk = sub.add_parser("package", help="Zip a recorded run (timeline+artifacts+report+evidence) into a submission")
+    sp_pk.add_argument("run_id")
 
     a = p.parse_args()
     c = a.cmd
@@ -210,6 +213,11 @@ def main() -> int:
         nid = r.get("data", {}).get("new_run_id")
         if nid:
             print(f"new run: {nid}")
+        return 0 if r.get("success") else 1
+    if c == "package":
+        from core import package
+        r = package.build_package(a.run_id)
+        print(r.get("message", ""))
         return 0 if r.get("success") else 1
     p.print_help(); return 1
 

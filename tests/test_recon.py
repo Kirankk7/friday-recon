@@ -420,6 +420,32 @@ def test_f4_bug_bounty_threads_timeline(tmp_path):
                 pass
 
 
+def test_f4_package_parity(tmp_path):
+    """F4 parity: build_package zips a run — timeline + artifacts + report + evidence."""
+    import os, zipfile
+    from core import timeline, package
+    timeline._RUNS_DIR = str(tmp_path)
+    tl = timeline.start_run("t.example")
+    tl.write_artifact("endpoints.json", ["http://t.example/a"])
+    tl.write_artifact("findings.json", [{"template": "sqli"}])
+    reports = os.path.join(str(tmp_path), "reports")
+    os.makedirs(os.path.join(reports, "evidence"), exist_ok=True)
+    report = os.path.join(reports, "bugbounty_t.example.md")
+    open(report, "w", encoding="utf-8").write("# Report")
+    open(os.path.join(reports, "evidence", "01_sqli.json"), "w", encoding="utf-8").write("{}")
+    tl.record_event("evidence", artifacts=[{"name": "bugbounty_t.example.md",
+                                            "path": report, "kind": "report"}])
+    tl.finish()
+    r = package.build_package(tl.run_id)
+    assert r["success"] and os.path.exists(r["data"]["path"])
+    with zipfile.ZipFile(r["data"]["path"]) as z:
+        names = z.namelist()
+    for want in ("timeline.json", "endpoints.json", "findings.json",
+                 "bugbounty_t.example.md", "evidence/01_sqli.json"):
+        assert want in names, f"missing {want} in {names}"
+    assert not package.build_package("nope")["success"]
+
+
 def test_f4_replay_parity(tmp_path):
     """F4 parity: replay reruns a recorded run — full hunt from target, per-step probe from
     the persisted endpoints artifact, refuses unknown/missing runs."""
