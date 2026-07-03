@@ -368,6 +368,9 @@ def test_f4_timeline_recorder_parity(tmp_path):
     assert back["events"][1]["outputs"]["alive"] == 121
     assert back["events"][1]["duration_ms"] is not None
     assert tl.run_id in timeline.list_runs()
+    view = timeline.render(tl.run_id)
+    assert "t.com" in view and "httpx" in view and "✗" in view
+    assert tl.run_id[:8] in timeline.render_list()
 
 
 def test_f4_bug_bounty_threads_timeline(tmp_path):

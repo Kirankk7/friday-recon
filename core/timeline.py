@@ -179,3 +179,40 @@ def list_runs() -> list:
         return ids
     except Exception:
         return []
+
+
+# ── viewer (read side) ──
+_MARK = {"ok": "✓", "skipped": "○", "failed": "✗", "running": "…"}
+
+
+def _summary(outputs: dict) -> str:
+    """One-line 'k v, k v' from an event's outputs (skip zero/empty)."""
+    if not outputs:
+        return ""
+    return ", ".join(f"{v} {k}" for k, v in outputs.items() if v not in (0, "", None))
+
+
+def render(run_id: str) -> str:
+    """Platform-feel view of one run (the design's viewer target). '' if absent."""
+    tl = load(run_id)
+    if not tl:
+        return ""
+    head = f"Run {tl.get('started_at','')}  ({run_id[:8]}…)  [{tl.get('status','')}]"
+    lines = [head, f"  Target: {tl.get('target','')}"]
+    for e in tl.get("events", []):
+        mark = _MARK.get(e.get("status"), " ")
+        dur = e.get("duration_ms")
+        dur_s = f"{dur/1000:.1f}s" if isinstance(dur, (int, float)) else ""
+        summary = _summary(e.get("outputs")) or (e.get("error") or "")
+        lines.append(f"  {mark} {e.get('step',''):<10} {summary:<28} {dur_s}".rstrip())
+    return "\n".join(lines)
+
+
+def render_list(limit: int = 20) -> str:
+    """One line per recent run: id · status · target · #events."""
+    out = []
+    for rid in list_runs()[:limit]:
+        tl = load(rid) or {}
+        out.append(f"{rid[:8]}…  {tl.get('status',''):<8} {tl.get('target',''):<24} "
+                   f"{len(tl.get('events', []))} events  {tl.get('started_at','')}")
+    return "\n".join(out) or "No runs recorded yet."

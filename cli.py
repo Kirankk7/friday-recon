@@ -144,6 +144,9 @@ def main() -> int:
     add("capture", "Show the captured endpoint inventory for a host", "host")
     sp_sc = add("scan-captured", "IDOR/BOLA across captured object-id endpoints (owner=captured)", "host")
     sp_sc.add_argument("--attacker", default="userB")
+    # F4 — execution timeline (read side)
+    sp_tl = sub.add_parser("timeline", help="Show a run's execution timeline (no arg = list recent runs)")
+    sp_tl.add_argument("run_id", nargs="?", default="")
 
     a = p.parse_args()
     c = a.cmd
@@ -192,6 +195,10 @@ def main() -> int:
         from core import live_capture as lc
         r = lc.scan_captured(a.host, attacker=a.attacker)
         print(r.get("message", "")); return 0 if r.get("success") else 1
+    if c == "timeline":
+        from core import timeline as tl
+        print(tl.render(a.run_id) if a.run_id else tl.render_list())
+        return 0
     p.print_help(); return 1
 
 
