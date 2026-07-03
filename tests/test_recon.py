@@ -342,3 +342,29 @@ def test_f3_evidence_object_parity():
     assert evidence.lint(o) == []
     md = evidence.to_markdown(o)
     assert "CWE-89" in md and "CVSS 3.1" in md and "curl" in md
+
+
+def test_f4_timeline_recorder_parity(tmp_path):
+    """F4 parity: pure recorder — events + step() timing, immutable versioned
+    timeline.json persisted/loadable, status derived from event outcomes."""
+    from core import timeline
+    timeline._RUNS_DIR = str(tmp_path)
+    tl = timeline.start_run("t.com")
+    assert tl.status == "running" and tl.run_id
+    tl.record_event("subfinder", tool="subfinder", outputs={"domains": 143})
+    with tl.step("httpx", inputs={"target": "t.com"}) as ev:
+        ev["outputs"] = {"alive": 121}
+    # step() records the failure then re-raises (pipeline behaviour unchanged)
+    import pytest
+    with pytest.raises(RuntimeError):
+        with tl.step("nuclei"):
+            raise RuntimeError("boom")
+    tl.finish()
+    assert len(tl.events) == 3
+    assert tl.status == "partial"          # ok + failed mix
+    back = timeline.load(tl.run_id)
+    assert back and back["schema_version"] == 1
+    assert back["events"][2]["status"] == "failed" and "boom" in back["events"][2]["error"]
+    assert back["events"][1]["outputs"]["alive"] == 121
+    assert back["events"][1]["duration_ms"] is not None
+    assert tl.run_id in timeline.list_runs()
