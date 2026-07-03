@@ -3850,6 +3850,33 @@ Report:"""
     # =====================================
     # RUN
     # =====================================
+    # ── F4 execution-timeline surface (parity; recon drives these via the CLI too) ──
+    def timeline_show(self, run_id: str = "") -> dict:
+        """No run_id -> list recent runs; a run_id -> the platform-feel viewer for that run."""
+        from core import timeline
+        if not run_id:
+            return {"success": True, "message": timeline.render_list(),
+                    "data": {"runs": timeline.list_runs()}}
+        view = timeline.render(run_id)
+        if not view:
+            return {"success": False, "message": f"No recorded run '{run_id}'.", "data": {}}
+        return {"success": True, "message": view, "data": timeline.load(run_id) or {}}
+
+    def make_package(self, run_id: str = "") -> dict:
+        """Zip a recorded run (timeline + artifacts + report + evidence) into a submission.
+        Read-only assembly. Defaults to the most recent run."""
+        from core import timeline, package
+        run_id = run_id or (timeline.list_runs()[0] if timeline.list_runs() else "")
+        if not run_id:
+            return {"success": False, "message": "No recorded runs to package yet.", "data": {}}
+        return package.build_package(run_id)
+
+    def replay_run(self, run_id: str = "", step: str = "") -> dict:
+        """Rerun a recorded run (full, or a step: recon|probe). NOTE: launches an ACTIVE
+        scan against the recorded target."""
+        from core import replay
+        return replay.replay(run_id, step or None)
+
     def run(
         self,
         input_text: str,
