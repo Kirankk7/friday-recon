@@ -117,6 +117,7 @@ def main() -> int:
     sp_rc = add("recon", "Full recon pipeline (nmap→subfinder→httpx→nuclei→katana)", "target"); sp_rc.add_argument("--force", action="store_true")
     add("cve", "Search NVD for CVEs by keyword", "keyword")
     sp_bb = add("bugbounty", "Full bug-bounty workflow → validated PoC report", "target"); sp_bb.add_argument("--force", action="store_true")
+    sp_bb.add_argument("--owner", default=""); sp_bb.add_argument("--attacker", default="")   # IDOR oracle principals (else auto from 2 sessions)
     add("burp", "Ingest a Burp HTTP-history XML export → endpoint inventory", "path")
     add("scope-setup", "Parse a pasted program policy (text file) → set in/out scope + rules", "policyfile")
     add("kb", "Ask the bug-bounty methodology knowledge base", "query")
@@ -160,7 +161,7 @@ def main() -> int:
     if c == "scan":        return _run("nmap_scan", target=a.target, scan_type=a.type)
     if c == "recon":       return _run("full_recon", target=a.target, force=getattr(a,"force",False))
     if c == "cve":         return _run("search_cve", keyword=a.keyword)
-    if c == "bugbounty":   return _run("bug_bounty", target=a.target, force=getattr(a,"force",False))
+    if c == "bugbounty":   return _run("bug_bounty", target=a.target, force=getattr(a,"force",False), owner=a.owner, attacker=a.attacker)
     if c == "burp":        return _run("ingest_burp", path=a.path)
     if c == "scope-setup":
         try:

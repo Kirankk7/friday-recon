@@ -166,7 +166,7 @@ def test_v12_engine_end_to_end(tmp_path):
         rid = r["data"].get("run_id")
         rpt = r["data"].get("report", "")
         tl = timeline.load(rid)
-        assert tl and all(s in [e["step"] for e in tl["events"]] for s in ("recon", "probe", "gate", "evidence"))
+        assert tl and all(s in [e["step"] for e in tl["events"]] for s in ("recon", "probe", "idor", "gate", "evidence"))
         assert "Priority:" in rpt and "Top priority:" in rpt
         assert "Also affected (2)" in rpt          # dedup
         assert "`id`" in rpt                        # data-driven impact
@@ -514,7 +514,7 @@ def test_f4_bug_bounty_threads_timeline(tmp_path):
         tl = timeline.load(rid)
         assert tl and tl["schema_version"] == 1
         by_step = {e["step"]: e for e in tl["events"]}
-        for s in ("recon", "probe", "gate", "evidence"):
+        for s in ("recon", "probe", "idor", "gate", "evidence"):
             assert s in by_step, f"missing {s} in {list(by_step)}"
         assert tl["status"] in ("ok", "partial", "failed")
         # rich inputs (replay needs target) + persisted artifacts

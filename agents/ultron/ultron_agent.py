@@ -2132,7 +2132,7 @@ Report:"""
         return report.impact_line(f)
 
     def bug_bounty(self, target: str, validate: bool = True, force: bool = False,
-                   cookie: str = "") -> dict:
+                   cookie: str = "", owner: str = "", attacker: str = "") -> dict:
         """Full bug-bounty hunt: recon pipeline -> parse findings -> CVE/exploit
         lookup -> (validate) -> structured PoC report. Authorized targets only.
         cookie carries a logged-in session so the crawl + injection probe cover
@@ -2217,6 +2217,32 @@ Report:"""
             print(f"[ULTRON] stored-XSS probe skipped: {e}")
         _tl_event("probe", tool="injection/post/path/stored-xss",
                   outputs={"findings": len(findings)})
+
+        # ── Stage 2.6: Multi-user authz (IDOR/BOLA oracle B3) — only when 2 principals exist ──
+        # The single-session probes above can't reach IDOR (the top real-bounty class). If the
+        # user set 2 sessions, replay every id-bearing crawled URL as owner-vs-attacker-vs-anon.
+        try:
+            from core import session_manager as sm, request_mutator as rm
+            _names = list(sm.list_sessions().keys())
+            _owner = owner or (_names[0] if len(_names) >= 2 else "")
+            _attacker = attacker or next((n for n in _names if n != _owner), "")
+            if _owner and _attacker and sm.headers_for(_owner) and sm.headers_for(_attacker):
+                # id-bearing URLs only (mutate_url returns variants iff a swappable id exists)
+                _cands = [u for u in dict.fromkeys(pdata.get("urls", [])) if rm.mutate_url(u)][:15]
+                print(f"[ULTRON] Stage 2.6: IDOR oracle on {len(_cands)} id-bearing URL(s) "
+                      f"({_owner} vs {_attacker})")
+                for _u in _cands:
+                    try:
+                        _r = self.idor_check(_u, owner=_owner, attacker=_attacker)
+                        findings += _r.get("data", {}).get("findings", [])
+                    except Exception:
+                        continue
+            elif _names:
+                print(f"[ULTRON] Stage 2.6 skipped: need 2 sessions for IDOR (have {len(_names)}). "
+                      f"Set them: session set userA cookie ..")
+        except Exception as e:
+            print(f"[ULTRON] IDOR oracle skipped: {e}")
+        _tl_event("idor", tool="idor_check", outputs={"findings": len(findings)})
 
         # ── Stage 3: CVE -> exploit lookup (critical/high only, capped) ──
         exploits_map = {}
