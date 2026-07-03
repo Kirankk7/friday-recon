@@ -53,6 +53,21 @@ class Timeline:
             pass
         return os.path.join(self.run_dir, name)
 
+    def write_artifact(self, name: str, data, kind: str = "json") -> dict:
+        """Persist a stage's output under the run dir so replay/debugging can read exactly
+        what it emitted (not just counts). Returns the artifact ref for an event's
+        artifacts[], or {} on failure. Never raises."""
+        try:
+            path = self.artifact_path(name)
+            with open(path, "w", encoding="utf-8") as f:
+                if kind == "json":
+                    json.dump(data, f, indent=2, default=str)
+                else:
+                    f.write(data if isinstance(data, str) else str(data))
+            return {"name": name, "path": path, "kind": kind}
+        except Exception:
+            return {}
+
     # ── recording ──
     def record_event(self, step: str, tool: str = "", inputs=None, outputs=None,
                      artifacts=None, exit_code=None, status: str = "ok",

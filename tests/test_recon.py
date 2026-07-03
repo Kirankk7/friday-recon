@@ -371,6 +371,11 @@ def test_f4_timeline_recorder_parity(tmp_path):
     view = timeline.render(tl.run_id)
     assert "t.com" in view and "httpx" in view and "✗" in view
     assert tl.run_id[:8] in timeline.render_list()
+    # artifact persistence (debugging superpower / replay input)
+    import os, json
+    art = tl.write_artifact("endpoints.json", ["http://t.com/a"])
+    assert art and os.path.exists(art["path"])
+    assert json.load(open(art["path"], encoding="utf-8")) == ["http://t.com/a"]
 
 
 def test_f4_bug_bounty_threads_timeline(tmp_path):
@@ -380,12 +385,16 @@ def test_f4_bug_bounty_threads_timeline(tmp_path):
     U = _ult.ultron_agent
     timeline._RUNS_DIR = str(tmp_path)
     stubs = {"full_pipeline": lambda *a, **k: {"success": True, "data":
-                {"urls": [], "post_endpoints": [], "sections": {"nuclei": "", "httpx": ""}}},
-             "_probe_injection": lambda *a, **k: [],
+                {"urls": ["http://t.example/a?id=1"], "post_endpoints": [],
+                 "sections": {"nuclei": "", "httpx": ""}}},
+             "_probe_injection": lambda *a, **k: [
+                {"template": "sqli-error-based", "severity": "high", "url": "http://t.example/a?id=1",
+                 "cve": "", "evidence": "db error", "repro": ["x"]}],
              "_probe_post": lambda *a, **k: [],
              "_probe_path_params": lambda *a, **k: [],
              "_probe_stored_xss": lambda *a, **k: [],
-             "save_report": lambda *a, **k: ""}
+             "save_report": lambda *a, **k: "",
+             "collect_evidence": lambda *a, **k: {"success": True, "data": {}}}
     for name, fn in stubs.items():
         setattr(U, name, fn)
     try:
@@ -394,10 +403,15 @@ def test_f4_bug_bounty_threads_timeline(tmp_path):
         assert rid
         tl = timeline.load(rid)
         assert tl and tl["schema_version"] == 1
-        steps = [e["step"] for e in tl["events"]]
+        by_step = {e["step"]: e for e in tl["events"]}
         for s in ("recon", "probe", "gate", "evidence"):
-            assert s in steps, f"missing {s} in {steps}"
+            assert s in by_step, f"missing {s} in {list(by_step)}"
         assert tl["status"] in ("ok", "partial", "failed")
+        # rich inputs (replay needs target) + persisted artifacts
+        assert by_step["recon"]["inputs"].get("target") == "t.example"
+        import os
+        for art_name in ("endpoints.json", "findings.json"):
+            assert os.path.exists(os.path.join(str(tmp_path), rid, art_name)), art_name
     finally:
         for name in stubs:
             try:

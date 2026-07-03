@@ -2820,9 +2820,18 @@ Report:"""
         pipeline = self.full_pipeline(target, cookie=cookie)
         pdata = pipeline.get("data", {})
         nuclei_raw = pdata.get("sections", {}).get("nuclei", "")
+        _recon_art = []
+        if _tl:
+            for _n, _d in (("endpoints.json", pdata.get("urls", [])),
+                           ("post_endpoints.json", pdata.get("post_endpoints", []))):
+                _a = _tl.write_artifact(_n, _d)
+                if _a and _d:
+                    _recon_art.append(_a)
         _tl_event("recon", tool="full_pipeline",
+                  inputs={"target": target, "cookie": bool(cookie)},
                   outputs={"urls": len(pdata.get("urls", [])),
                            "post_endpoints": len(pdata.get("post_endpoints", []))},
+                  artifacts=_recon_art,
                   status="ok" if pipeline.get("success") else "failed")
 
         # ── Stage 2: Parse nuclei -> structured findings ──
@@ -2890,8 +2899,14 @@ Report:"""
             f["_gate"] = self._validate_finding(f, exploits_map)
         reportable = [f for f in findings if f["_gate"]["report"]]
         filtered = len(findings) - len(reportable)
+        _gate_art = []
+        if _tl:
+            _a = _tl.write_artifact("findings.json", findings)
+            if _a and findings:
+                _gate_art.append(_a)
         _tl_event("gate", tool="_validate_finding",
-                  outputs={"reportable": len(reportable), "filtered": filtered})
+                  outputs={"reportable": len(reportable), "filtered": filtered},
+                  artifacts=_gate_art)
 
         # ── Auto-capture: a confirmed finding promotes its technique in the playbook
         #     (novelty-checked; a reference technique that fires on a real target
