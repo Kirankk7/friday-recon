@@ -115,16 +115,37 @@ def md_to_html(md: str, title: str) -> str:
 
 
 def impact_line(f: dict) -> str:
-    sev = (f.get("severity") or "").lower()
+    """Data-driven impact for THIS finding: the canonical class-level impact (from the
+    Evidence Object's map — one source of truth) + the concrete affected param/endpoint +
+    a confidence qualifier from the gate. Deterministic, no over-claiming."""
+    from core import evidence as _ev
+    parts = [_ev.class_impact(f.get("template", ""))]   # class sentence, ends with '.'
+
+    # concrete location — name the injected parameter, else the endpoint path
+    loc = ""
+    url = f.get("url", "") or ""
+    try:
+        from urllib.parse import urlsplit, parse_qsl
+        u = urlsplit(url)
+        q = parse_qsl(u.query)
+        if q:
+            loc = f" via parameter `{q[0][0]}`"
+        elif u.path and u.path != "/":
+            loc = f" at `{u.path}`"
+    except Exception:
+        pass
+    if loc:
+        parts.append(f"Affected{loc}.")
     if f.get("cve"):
-        return ("Exploitable known vulnerability — potential remote compromise; "
-                "prioritise immediately." if sev in ("critical", "high")
-                else "Known vulnerability present; exploitation feasible under conditions.")
-    return {"critical": "Critical — likely full compromise of the affected component.",
-            "high": "High — significant unauthorized access or data exposure likely.",
-            "medium": "Medium — meaningful weakness, exploitation needs some conditions.",
-            "low": "Low — limited direct impact; defence-in-depth concern.",
-            }.get(sev, "Informational — minimal direct security impact.")
+        parts.append(f"Tracked as {f['cve']}.")
+
+    qual = {"reproduced": "Reproduced directly on this target.",
+            "supported": "Supported by a direct signal.",
+            "candidate": "Candidate — needs manual confirmation."
+            }.get((f.get("_gate", {}) or {}).get("confidence", ""), "")
+    if qual:
+        parts.append(qual)
+    return " ".join(parts)
 
 
 def build_test_plan(target: str, findings: list, pipeline_data: dict) -> list:

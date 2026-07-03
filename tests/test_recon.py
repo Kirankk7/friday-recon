@@ -98,6 +98,21 @@ def test_report_triage_ordering():
     assert "Top priority: **sqli-error-based**" in rpt and "Priority:" in rpt
     rpt.encode("cp1252")
 
+def test_impact_data_driven():
+    """Impact line is evidence-aware: canonical class impact + concrete param/endpoint + confidence."""
+    from agents.ultron import report
+    from core import evidence
+    assert "database" in evidence.class_impact("sqli-error-based").lower()
+    line = report.impact_line({"template": "sqli-error-based", "severity": "high",
+                               "url": "http://t/p?id=1", "cve": "",
+                               "_gate": {"confidence": "reproduced"}})
+    assert "`id`" in line and "parameter" in line and "Reproduced" in line
+    line2 = report.impact_line({"template": "idor-bola", "severity": "medium",
+                                "url": "http://t/api/user/5", "cve": "",
+                                "_gate": {"confidence": "candidate"}})
+    assert "`/api/user/5`" in line2 and "Candidate" in line2
+    line.encode("cp1252"); line2.encode("cp1252")
+
 
 # ── KB retrieval (offline) ──────────────────────────────────────────────────────
 from core import security_kb as kb

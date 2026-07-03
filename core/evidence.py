@@ -90,6 +90,13 @@ def _vuln_class(template: str) -> str:
     return "finding"
 
 
+def class_impact(template: str) -> str:
+    """The canonical class-level impact sentence for a template (public accessor over the
+    same _IMPACT map build() uses — one source of truth for impact text)."""
+    return _IMPACT.get(_vuln_class(template),
+                       "Impact depends on exploitation; confirm scope with a manual test.")
+
+
 def curl_for(finding: dict) -> str:
     url = finding.get("url", "") or ""
     method = (finding.get("method") or "GET").upper()
