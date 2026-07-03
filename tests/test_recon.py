@@ -131,6 +131,58 @@ def test_report_dedup_clustering():
     assert "Also affected (2)" in rpt and "Reportable findings: **1**" in rpt
     rpt.encode("cp1252")
 
+def test_v12_engine_end_to_end(tmp_path):
+    """v1.2 integration: one real bug_bounty() run fires the whole chain — F4 timeline+package,
+    gate filter, triage ranking, data-driven impact, dedup, exploitability, evidence (parity)."""
+    import os, re, zipfile
+    from core import timeline, package
+    timeline._RUNS_DIR = os.path.join(str(tmp_path), "runs")
+    urls = [f"http://shop.example.com/item?id={i}" for i in range(3)] + ["http://shop.example.com/s?q=1"]
+    sqli = [{"template": "sqli-error-based", "severity": "high", "url": u, "cve": "",
+             "validated": True, "evidence": "error in your SQL syntax", "repro": ["'"]} for u in urls[:3]]
+    cve = [{"template": "CVE-2021-44228", "severity": "critical", "url": "http://shop.example.com/api",
+            "cve": "CVE-2021-44228", "validated": True}]
+    noise = [{"template": "tls-version", "severity": "low", "url": "http://shop.example.com", "cve": ""}]
+
+    def _save(name, body):
+        p = os.path.join(str(tmp_path), "reports", name + ".md")
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        open(p, "w", encoding="utf-8").write(body)
+        return p
+
+    stubs = {"full_pipeline": lambda *a, **k: {"success": True, "data":
+                {"urls": urls, "post_endpoints": [], "sections": {"nuclei": "", "httpx": ""}}},
+             "_probe_injection": lambda *a, **k: [dict(x) for x in sqli + cve + noise],
+             "_probe_post": lambda *a, **k: [], "_probe_path_params": lambda *a, **k: [],
+             "_probe_stored_xss": lambda *a, **k: [],
+             "collect_evidence": lambda *a, **k: {"success": True, "data": {}},
+             "find_exploits": lambda *a, **k: {"success": True, "data": {"pocs": [{"url": "p"}], "total": 1}, "message": "p"},
+             "save_report": _save}
+    orig = {n: getattr(U, n) for n in stubs}
+    for n, fn in stubs.items():
+        setattr(U, n, fn)
+    try:
+        r = U.bug_bounty("shop.example.com", force=True)
+        rid = r["data"].get("run_id")
+        rpt = r["data"].get("report", "")
+        tl = timeline.load(rid)
+        assert tl and all(s in [e["step"] for e in tl["events"]] for s in ("recon", "probe", "gate", "evidence"))
+        assert "Priority:" in rpt and "Top priority:" in rpt
+        assert "Also affected (2)" in rpt          # dedup
+        assert "`id`" in rpt                        # data-driven impact
+        assert "reproduced on target" in rpt        # exploitability
+        assert "Filtered by Validation Gate" in rpt and "tls-version" in rpt  # gate
+        prios = [int(x) for x in re.findall(r"\*\*Priority:\*\* (\d+)/100", rpt)]
+        assert prios and prios == sorted(prios, reverse=True)
+        pk = package.build_package(rid)
+        assert pk["success"]
+        with zipfile.ZipFile(pk["data"]["path"]) as z:
+            names = z.namelist()
+        assert "timeline.json" in names and any(n.endswith(".md") for n in names)
+    finally:
+        for n, fn in orig.items():
+            setattr(U, n, fn)
+
 
 # ── KB retrieval (offline) ──────────────────────────────────────────────────────
 from core import security_kb as kb
