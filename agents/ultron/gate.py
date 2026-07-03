@@ -32,6 +32,10 @@ PAYOUT_TIER = {
 # exploit exists (turns a report into a demonstrable compromise). No CVSS/LLM needed.
 _TRIAGE_BASE = {"critical": 90, "high": 70, "medium": 45, "low": 20, "info": 5}
 _TRIAGE_CONF = {"reproduced": 1.0, "supported": 0.85, "candidate": 0.6, "weak": 0.3}
+# Injectable/authz classes a probe can DEMONSTRATE directly — a reproduced one is
+# exploitable in hand (exploit signal), independent of any CVE.
+_DEMONSTRABLE = ("sqli", "nosqli", "xss", "rce", "cmdi", "ssti", "lfi", "path",
+                 "idor", "bola", "ssrf", "xxe", "open-redirect", "redirect")
 
 
 def triage(severity: str, confidence: str, has_exploit: bool = False) -> int:
@@ -106,7 +110,21 @@ def validate_finding(f: dict, exploits_map: dict, oos_types: list = None) -> dic
         confidence = "candidate"       # report-worthy lead, NOT yet proven (e.g. IDOR needs 2 accounts)
     else:
         confidence = "weak"
-    priority = triage(sev, confidence, has_exploit=bool(cve and exploits_map.get(cve)))
+    # Exploitability signal — NOT just "has a CVE with a public PoC". A directly-reproduced
+    # app-vuln (SQLi/XSS/IDOR/... that a probe demonstrated on THIS target) is exploitable in
+    # hand, often more actionable than a CVE match. Both feed the triage exploit bonus.
+    demonstrated = f.get("validated") is True and any(k in tmpl for k in _DEMONSTRABLE)
+    if cve and exploits_map.get(cve):
+        exploitability = "public exploit available"
+    elif demonstrated:
+        exploitability = "reproduced on target"
+    elif cve:
+        exploitability = "tracked CVE (no public PoC)"
+    else:
+        exploitability = ""
+    has_exploit = bool(cve and exploits_map.get(cve)) or demonstrated
+    priority = triage(sev, confidence, has_exploit=has_exploit)
     return {"report": report, "score": score, "tier": PAYOUT_TIER.get(sev, "P5"),
             "reasons": reasons, "confidence": confidence, "priority": priority,
+            "exploitability": exploitability,
             "drop": None if report else f"failed quality gate ({score}/7)"}

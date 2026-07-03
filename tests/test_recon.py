@@ -81,7 +81,9 @@ def test_gate_triage_priority():
     assert gate.triage("critical", "reproduced", True) <= 100
     g = U._validate_finding({"template": "sqli", "severity": "high",
                              "url": "http://t/p?id=1", "validated": True, "cve": ""}, {})
-    assert g["priority"] == gate.triage("high", "reproduced")
+    # reproduced app-vuln is demonstrably exploitable (no CVE needed) -> exploit bonus
+    assert g["priority"] == gate.triage("high", "reproduced", True)
+    assert g["exploitability"] == "reproduced on target"
 
 def test_report_triage_ordering():
     """Report ranks findings by triage priority (best bug first), exec summary names top."""

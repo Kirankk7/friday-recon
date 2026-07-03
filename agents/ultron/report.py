@@ -357,6 +357,8 @@ def format_bb_report(target, findings, exploits_map, pipeline_data, validated):
             lines.append(f"- **Confidence:** {g.get('confidence', 'candidate').upper()} "
                          f"({g['score']}/7 quality checks)")
             lines.append(f"- **Priority:** {g.get('priority', 0)}/100 (triage: severity x confidence, +exploit)")
+            if g.get("exploitability"):
+                lines.append(f"- **Exploitability:** {g['exploitability']}")
             # F3 — CWE + preliminary CVSS per finding (from the canonical Evidence Object).
             try:
                 from core import evidence as _ev
