@@ -272,6 +272,30 @@ def _patch_http(monkeypatch, getter):
     monkeypatch.setattr(_ult, "_http_get", getter)
 
 
+def test_rate_gate_safety():
+    """Safety promise: _rate_gate throttles public hosts (RoE rps / 3-rps default) but leaves
+    localhost unthrottled — guards against a refactor hammering a real bounty target. No network."""
+    import time, os
+    roe = os.path.join("data", "roe.json"); bak = roe + ".ratetest.bak"
+    had = os.path.exists(roe)
+    if had:
+        os.replace(roe, bak)
+    try:
+        _ult._RATE_LAST[0] = 0.0
+        t0 = time.time()
+        for _ in range(8):
+            _ult._rate_gate("http://127.0.0.1:8000/x")
+        assert time.time() - t0 < 0.25, "localhost must be unthrottled"
+        _ult._RATE_LAST[0] = 0.0
+        t0 = time.time()
+        for _ in range(3):
+            _ult._rate_gate("http://example.com/x")
+        assert time.time() - t0 >= 0.55, "public host must be throttled to ~3 rps"
+    finally:
+        if had:
+            os.replace(bak, roe)
+
+
 def test_write_bola_oracle(monkeypatch):
     """Opt-in write-BOLA oracle: attacker mutates owner's object -> CRITICAL + auto-revert;
     destructive fields refused; enforced-ownership = no finding. (VAmPI dogfood.)"""
