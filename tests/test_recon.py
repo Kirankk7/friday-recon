@@ -272,6 +272,41 @@ def _patch_http(monkeypatch, getter):
     monkeypatch.setattr(_ult, "_http_get", getter)
 
 
+def test_write_bola_oracle(monkeypatch):
+    """Opt-in write-BOLA oracle: attacker mutates owner's object -> CRITICAL + auto-revert;
+    destructive fields refused; enforced-ownership = no finding. (VAmPI dogfood.)"""
+    import json as _json
+    from core import session_manager as sm
+    U = _ult.ultron_agent
+    class _J:
+        def __init__(s, obj, c=200): s._o = obj; s.status_code = c; s.text = _json.dumps(obj); s.headers = {}
+        def json(s): return s._o
+    sm.clear(); sm.set_session("userA", cookie="uid=1"); sm.set_session("userB", cookie="uid=2")
+    # vulnerable: no ownership check on write
+    state = {"email": "alice@orig.com"}
+    monkeypatch.setattr(_ult, "_http_get", lambda url, timeout=8, headers=None, allow_redirects=True: _J(dict(state)))
+    def w(method, url, json_body=None, timeout=8, headers=None):
+        state.update(json_body or {}); return _J(dict(state), 204)
+    monkeypatch.setattr(_ult, "_http_write", w)
+    r = U.write_bola_check("http://t/users/v1/alice", field="email", owner="userA", attacker="userB")
+    assert "idor-bola-write" in [f["template"] for f in r["data"]["findings"]]
+    assert r["data"]["reverted"] is True and state["email"] == "alice@orig.com"
+    # destructive field refused
+    rp = U.write_bola_check("http://t/users/v1/alice", field="password", owner="userA", attacker="userB")
+    assert not rp["success"] and "Refusing" in rp["message"]
+    # enforced ownership -> no finding
+    state2 = {"email": "bob@orig.com"}
+    monkeypatch.setattr(_ult, "_http_get", lambda url, timeout=8, headers=None, allow_redirects=True: _J(dict(state2)))
+    def w2(method, url, json_body=None, timeout=8, headers=None):
+        ck = (headers or {}).get("Cookie", "")
+        if ck == "uid=1": state2.update(json_body or {})
+        return _J(dict(state2), 200 if ck == "uid=1" else 403)
+    monkeypatch.setattr(_ult, "_http_write", w2)
+    r2 = U.write_bola_check("http://t/users/v1/bob", field="email", owner="userA", attacker="userB")
+    assert not r2["data"]["findings"]
+    sm.clear()
+
+
 def test_probe_flags_sqli_and_xss(monkeypatch):
     def _get(url, timeout=8, headers=None, allow_redirects=True):
         if "id=" in url and "%27" in url:

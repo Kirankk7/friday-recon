@@ -382,6 +382,14 @@ def _http_post(url: str, data=None, json_body=None, timeout: int = 8, headers: d
                          headers=headers or None)
 
 
+def _http_write(method: str, url: str, json_body=None, timeout: int = 8, headers: dict = None):
+    """PUT/PATCH/DELETE seam for the opt-in write-BOLA oracle (patchable in tests)."""
+    import requests
+    _rate_gate(url)
+    return requests.request(method.upper(), url, json=json_body, timeout=timeout,
+                            headers=headers or None)
+
+
 
 # Param-name -> extra test type. Dork-derived (TakSec param classes): the param's
 # NAME hints which class to test, so the probe doesn't fire every payload at every param.
@@ -3280,6 +3288,102 @@ Report:"""
                else f"No cross-principal access at {url} — attacker didn't get the owner's resource (good auth).")
         return {"success": True, "message": msg, "data": {"findings": findings}}
 
+    # fields whose auto-mutation would lock a user out / alter privilege or funds — refuse to
+    # write-test them (that's manual-only). The safe write-BOLA probe only touches benign,
+    # trivially-reversible fields (e.g. email, display name).
+    _WBOLA_UNSAFE_FIELDS = ("password", "passwd", "secret", "token", "balance", "amount",
+                            "role", "admin", "permission", "priv", "pin", "otp", "mfa", "2fa",
+                            "key", "credit", "fund", "wallet", "owner")
+
+    def write_bola_check(self, url: str, field: str = "email", owner: str = "userA",
+                         attacker: str = "userB", method: str = "PUT", verify_url: str = "") -> dict:
+        """OPT-IN write-BOLA oracle: does the ATTACKER's session MUTATE a field on the OWNER's
+        object? Read-only idor_check misses this (the highest-value BOLA class — e.g. changing
+        another user's email -> account takeover). SAFE by design: writes ONE benign, reversible
+        field with a unique marker, confirms the change landed on the OWNER's resource, then
+        REVERTS it. Refuses destructive fields (password/balance/role/...). NOT wired into
+        bug_bounty — call explicitly, on authorized targets, with your own two accounts only.
+
+        url = the write target (PUT/PATCH). verify_url = where to GET the object to confirm the
+        change (defaults to url; set it for sub-resource writes like VAmPI's /users/{u}/email)."""
+        from core import session_manager as sm
+        ho, ha = sm.headers_for(owner), sm.headers_for(attacker)
+        if ho is None or ha is None:
+            return {"success": False, "data": {},
+                    "message": f"Set both sessions first: 'session set {owner} ..' and 'session set {attacker} ..'."}
+        fl = (field or "").lower()
+        if any(bad in fl for bad in self._WBOLA_UNSAFE_FIELDS):
+            return {"success": False, "data": {},
+                    "message": f"Refusing to auto-write destructive field '{field}' (would lock out / alter "
+                               f"privilege or funds). Test that one manually."}
+        import time as _t
+        vurl = verify_url or url
+
+        def getj(h):
+            try:
+                r = _http_get(vurl, headers=h or {})
+                return r.status_code, (r.json() if (r.text or "").strip() else {})
+            except Exception:
+                return None, {}
+
+        so, jo = getj(ho)
+        if so != 200 or not isinstance(jo, dict) or field not in jo:
+            return {"success": True, "data": {"findings": []},
+                    "message": f"Owner didn't return a JSON object carrying field '{field}' at {vurl} "
+                               f"(HTTP {so}) — nothing to write-test."}
+        original = jo[field]
+        stamp = int(_t.time())
+        marker = (f"wbola{stamp}@example.com" if ("@" in str(original) or "email" in fl)
+                  else f"wbola-marker-{stamp}")
+
+        try:
+            wr = _http_write(method, url, json_body={field: marker}, headers=ha)
+            wcode = wr.status_code
+        except Exception as e:
+            return {"success": False, "data": {}, "message": f"Attacker write failed: {e}"}
+
+        _t.sleep(0.2)
+        sv, jv = getj(ho)
+        landed = (sv == 200 and isinstance(jv, dict) and str(jv.get(field)) == marker)
+
+        findings, reverted = [], None
+        # revert whenever the write was ACCEPTED (2xx) — not only when it landed on the owner —
+        # so a JWT-scoped endpoint that mutated the ATTACKER's own object is cleaned up too (no
+        # dangling marker). Attacker session first (it made the write), then owner as fallback.
+        _wrote = isinstance(wcode, int) and 200 <= wcode < 300
+        if landed or _wrote:
+            for h in (ha, ho):
+                try:
+                    _http_write(method, url, json_body={field: original}, headers=h)
+                    _t.sleep(0.2)
+                    _s, _j = getj(ho)
+                    if isinstance(_j, dict) and str(_j.get(field)) == str(original):
+                        reverted = True
+                        break
+                except Exception:
+                    pass
+        if landed:
+            findings.append({
+                "template": "idor-bola-write", "severity": "critical", "url": url, "cve": None,
+                "validated": True,
+                "evidence": (f"'{attacker}' wrote field '{field}' on '{owner}'s object at {url} (HTTP {wcode}) "
+                             f"and the change was CONFIRMED on the owner's resource = write-BOLA (broken "
+                             f"object-level authorization on mutation). "
+                             + ("Value was reverted to the original." if reverted
+                                else f"WARNING: automatic revert FAILED — restore '{field}' to {original!r} manually.")),
+                "repro": [f"As {owner}: GET {url} -> {field}={original!r}",
+                          f"As {attacker}: {method} {url}  body {{{field!r}: {marker!r}}}  -> HTTP {wcode}",
+                          f"As {owner}: GET {url} -> {field}={marker!r}  (the attacker's write landed)",
+                          "Impact: an attacker mutates another user's object (change email -> password-reset takeover)"],
+            })
+
+        msg = (f"WRITE-BOLA CONFIRMED at {url} (field '{field}')"
+               + ("" if reverted else " — REVERT FAILED, restore manually") + "."
+               if findings else
+               f"No write-BOLA at {url} — attacker's write to '{field}' didn't land on the owner's object "
+               f"(HTTP {wcode}, good auth).")
+        return {"success": True, "message": msg, "data": {"findings": findings, "reverted": reverted}}
+
     def graphql_hunt(self, url: str, as_user: str = "") -> dict:
         """Hunt a GraphQL endpoint (Tier-2): introspection (schema exposure = info disclosure),
         operation inventory, flag privileged-looking mutations, and (if a session is set) check
@@ -4054,6 +4158,13 @@ Report:"""
             elif action == "idor_check":
                 return self.idor_check(parameters.get("url", target), parameters.get("owner", "userA"),
                                        parameters.get("attacker", "userB"))
+            elif action == "write_bola_check":
+                return self.write_bola_check(parameters.get("url", target),
+                                             parameters.get("field", "email"),
+                                             parameters.get("owner", "userA"),
+                                             parameters.get("attacker", "userB"),
+                                             parameters.get("method", "PUT"),
+                                             parameters.get("verify_url", ""))
             elif action == "graphql_hunt":
                 return self.graphql_hunt(parameters.get("url", target), parameters.get("as_user", ""))
 
