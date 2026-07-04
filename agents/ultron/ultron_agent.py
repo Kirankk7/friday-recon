@@ -1596,16 +1596,18 @@ Report:"""
                         purl = urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(q), ""))
                         time.sleep(0.1)
                         r = _http_get(purl, headers=_hdrs)
-                        # discipline (CBH xss-json-reflection FP trap): the marker (with angle
-                        # brackets) reflecting unencoded only matters in an HTML context — a
-                        # marker echoed in application/json or javascript won't render as markup.
-                        # Skip when the content-type is EXPLICITLY non-HTML (absent/unknown = allow).
+                        # discipline (xss FP trap): the marker (with angle brackets) reflecting
+                        # unencoded only renders as markup in an HTML context. Require the
+                        # content-type to be html/xhtml/xml (or absent/unknown — some servers omit
+                        # it but serve HTML); a POSITIVE allowlist. This rejects text/plain (e.g. a
+                        # 500 error page echoing input — DSVW dogfood FP), application/json,
+                        # javascript, css, octet-stream, etc. where the marker can't execute.
                         _ct = ""
                         try:
                             _ct = (r.headers.get("Content-Type") or "").lower()
                         except Exception:
                             _ct = ""
-                        _html_ctx = not (_ct and ("json" in _ct or "javascript" in _ct))
+                        _html_ctx = (not _ct) or ("html" in _ct) or ("xml" in _ct)
                         if marker in (r.text or "") and _html_ctx:
                             out.append({
                                 "template": "xss-reflected", "severity": "medium",
