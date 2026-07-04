@@ -289,14 +289,17 @@ def test_probe_flags_sqli_and_xss(monkeypatch):
 
 
 def test_probe_sqli_anomaly(monkeypatch):
+    # a quote -> 500 with NO DB-error string is an injection CANDIDATE of unconfirmed class,
+    # not a CVSS-9.8 SQLi (DSVW dogfood: path/include/name/size all 500 on a quote non-SQL).
     def _get(url, timeout=8, headers=None, allow_redirects=True):
         if "%27" in url:
             return _FakeResp("", 500)              # quote -> empty 500, no error string
         return _FakeResp("healthy page " * 100, 200)
     _patch_http(monkeypatch, _get)
     res = _ult.ultron_agent._probe_injection(["http://t.com/n.aspx?id=1"])
-    sqli = [r for r in res if r["template"] == "sqli-error-based"]
-    assert sqli and "500" in sqli[0]["evidence"]
+    anom = [r for r in res if r["template"] == "injection-error-anomaly"]
+    assert anom and anom[0]["severity"] == "medium" and "UNCONFIRMED" in anom[0]["evidence"]
+    assert not [r for r in res if r["template"] == "sqli-error-based"]  # must NOT over-claim SQLi
 
 
 # ── Feature B: tailored test plan ───────────────────────────────────────────────

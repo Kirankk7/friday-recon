@@ -273,7 +273,9 @@ _SQL_ERROR_SIGNS = re.compile(
     r"microsoft ole db|unclosed quotation mark|sqlite_error|sqlstate|"
     r"npgsql|psqlexception|pg::syntaxerror|syntax error at or near|"
     r"warning:\s*mysql|valid mysql result|sqlexception|incorrect syntax near|"
-    r"odbc.*driver|microsoft jet database",
+    r"odbc.*driver|microsoft jet database|"
+    # sqlite (python DB-API) — these are DB-specific enough not to false-match generic 500s
+    r"sqlite3\.\w*error|unrecognized token|no such (?:table|column)|sql logic error",
     re.IGNORECASE)
 # Unique-ish token for reflected-XSS detection (with angle brackets to prove no encoding).
 _XSS_MARKER = "jvz9xqk7z"
@@ -1557,19 +1559,32 @@ Report:"""
                         # flips it to a server error / empty body = query broke (classic SQLi).
                         anomaly = (base_status == 200 and (base_len or 0) > 200
                                    and (r.status_code >= 500 or len(body) == 0))
-                        if m or anomaly:
-                            ev = (f"DB error '{m.group(0)}' surfaced after injecting a single quote into param '{k}'."
-                                  if m else
-                                  f"Injecting a single quote into param '{k}' changed the response from "
-                                  f"HTTP 200/{base_len}b to HTTP {r.status_code}/{len(body)}b — server-side "
-                                  f"query error, a classic error-based SQLi signal.")
+                        if m:
+                            # a real DB-error signature = CONFIRMED error-based SQLi.
                             out.append({
                                 "template": "sqli-error-based", "severity": "high",
-                                "url": purl, "cve": None, "validated": True, "evidence": ev,
+                                "url": purl, "cve": None, "validated": True,
+                                "evidence": f"DB error '{m.group(0)}' surfaced after injecting a single quote into param '{k}'.",
                                 "repro": [f"Baseline: GET {u}  -> HTTP {base_status}/{base_len}b",
                                           f"Inject:   GET {purl}",
-                                          ("Observe the database error in the response body" if m
-                                           else f"Observe the response break to HTTP {r.status_code}/{len(body)}b")],
+                                          "Observe the database error in the response body"],
+                            })
+                            continue
+                        elif anomaly:
+                            # a quote flipped 200->500/empty but NO DB-error string surfaced. The input
+                            # is mishandled, but the CLASS is unconfirmed — a 500 can be SQLi, LFI, XPath,
+                            # command-inj, or a parser/cast error. Report as an injection CANDIDATE, not a
+                            # CVSS-9.8 SQLi (over-claiming a class off a bare status flip = an invalid report).
+                            out.append({
+                                "template": "injection-error-anomaly", "severity": "medium",
+                                "url": purl, "cve": None, "validated": True,
+                                "evidence": (f"Injecting a single quote into param '{k}' changed the response from "
+                                             f"HTTP 200/{base_len}b to HTTP {r.status_code}/{len(body)}b, with no DB-error "
+                                             f"string. Injection CANDIDATE — class UNCONFIRMED (SQLi / LFI / XPath / "
+                                             f"command / parser error); confirm the class manually before reporting."),
+                                "repro": [f"Baseline: GET {u}  -> HTTP {base_status}/{base_len}b",
+                                          f"Inject:   GET {purl}",
+                                          f"Observe the response break to HTTP {r.status_code}/{len(body)}b (class unconfirmed)"],
                             })
                             continue   # one finding per param is enough
                     except Exception:
