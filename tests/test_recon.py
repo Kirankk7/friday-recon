@@ -74,6 +74,24 @@ def test_apex_domain_for_subfinder():
     assert a("10.0.0.1") == "10.0.0.1" and a("localhost") == "localhost"  # IP/host unchanged
 
 
+def test_sitemap_paths_discovery(monkeypatch):
+    """Passive sitemap discovery follows a nested sitemap INDEX to child sitemaps and returns
+    the real page URLs (browser UA — WP serves empty to python-requests)."""
+    class _R:
+        def __init__(s, t): s.text = t; s.status_code = 200; s.headers = {}
+    INDEX = "<sitemapindex><sitemap><loc>https://t.com/page-sitemap.xml</loc></sitemap></sitemapindex>"
+    CHILD = "<urlset><url><loc>https://t.com/admission/</loc></url><url><loc>https://t.com/refer/</loc></url></urlset>"
+    def g(url, timeout=8, headers=None, allow_redirects=True):
+        if url.endswith("/robots.txt"): return _R("Sitemap: https://t.com/sitemap.xml")
+        if "page-sitemap" in url: return _R(CHILD)
+        if "sitemap" in url: return _R(INDEX)
+        return _R("")
+    monkeypatch.setattr(_ult, "_http_get", g)
+    paths = _ult._sitemap_paths("https://t.com")
+    assert "https://t.com/admission/" in paths and "https://t.com/refer/" in paths
+    assert not any(".xml" in p for p in paths)
+
+
 def test_gate_keeps_real_finding():
     f = {"template": "CVE-2021-44228", "severity": "critical",
          "url": "https://t.com/api", "cve": "CVE-2021-44228", "validated": True}

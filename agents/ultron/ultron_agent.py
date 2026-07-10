@@ -621,6 +621,40 @@ def _apex_domain(target: str) -> str:
     return ".".join(labels[-2:])
 
 
+def _sitemap_paths(base_url: str) -> list:
+    """PASSIVE path discovery (cheap: a few GETs): robots.txt 'Sitemap:' lines + /sitemap.xml,
+    following nested sitemap indexes. WordPress/CMS list every published page here — the fast
+    way to the real path surface without brute-force. Returns absolute page URLs."""
+    import re as _re
+    # a browser UA — WP/CMS bot-plugins serve an EMPTY body for sitemap.xml to 'python-requests'.
+    _ua = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+    def fetch(u):
+        try:
+            return _http_get(u, timeout=8, headers=_ua).text or ""
+        except Exception:
+            return ""
+    base = base_url.rstrip("/")
+    seeds = _re.findall(r"(?im)^\s*sitemap:\s*(\S+)", fetch(base + "/robots.txt"))
+    seeds.append(base + "/sitemap.xml")
+    seeds.append(base + "/sitemap_index.xml")
+    queue = list(dict.fromkeys(seeds))
+    out, seen = set(), set()
+    for _ in range(15):                                    # cap sitemap fetches
+        if not queue:
+            break
+        sm = queue.pop(0)
+        if sm in seen:
+            continue
+        seen.add(sm)
+        for loc in _re.findall(r"<loc>\s*([^<\s]+)\s*</loc>", fetch(sm)):
+            if loc.lower().endswith(".xml") and "sitemap" in loc.lower():
+                if loc not in seen:
+                    queue.append(loc)                      # nested sitemap index
+            elif loc.startswith("http"):
+                out.add(loc)
+    return sorted(out)
+
+
 def _report_type_target(name: str) -> tuple:
     """Split a save_report `name` into (type-label, target). full_recon passes a bare
     target; full_pipeline/bug_bounty/find_exploits prefix it with their type."""
@@ -1284,7 +1318,7 @@ class UltronAgent:
     # FULL PIPELINE (Phase 24)
     # Nmap -> Subfinder -> Httpx -> Nuclei -> Katana -> Screenshot
     # =====================================
-    def full_pipeline(self, target: str, cookie: str = "") -> dict:
+    def full_pipeline(self, target: str, cookie: str = "", discover: bool = False) -> dict:
 
         if not target:
             return {"success": False, "message": "Target missing.", "data": {}}
@@ -1354,6 +1388,35 @@ class UltronAgent:
                 urls = sorted(set(urls) | set(spa_urls))
                 sections["katana"] = (sections.get("katana", "") + "  |  " + spa.get("message", "")).strip()
                 print(f"[ULTRON] SPA enrichment: surface now {len(urls)} endpoint(s).")
+
+        # ── Sitemap discovery (PASSIVE, always-on): robots.txt + sitemap.xml list real pages ──
+        try:
+            _sm = _sitemap_paths(base_url)
+            if _sm:
+                urls = sorted(set(urls) | set(_sm))
+                sections["sitemap"] = f"{len(_sm)} page(s) from sitemap.xml / robots.txt."
+                print(f"[ULTRON] Sitemap: +{len(_sm)} page(s); surface now {len(urls)}.")
+            else:
+                sections["sitemap"] = "No sitemap.xml / robots.txt paths found."
+        except Exception as e:
+            sections["sitemap"] = f"Sitemap discovery skipped: {e}"
+
+        # ── Content discovery (ffuf/gobuster) — OPT-IN (slow/noisy; off by default) ──
+        if discover:
+            print("[ULTRON] Content discovery (opt-in): ffuf/gobuster...")
+            try:
+                _cd = self.content_discovery(target)
+                _found = _cd.get("data", {}).get("found", [])
+                sections["discovery"] = _cd.get("message", "no output")
+                if _found:
+                    _b = base_url.rstrip("/")
+                    urls = sorted(set(urls) | set(
+                        (p if p.startswith("http") else f"{_b}/{p.lstrip('/')}") for p in _found))
+                    print(f"[ULTRON] Content discovery: +{len(_found)} path(s); surface now {len(urls)}.")
+            except Exception as e:
+                sections["discovery"] = f"Content discovery skipped: {e}"
+        else:
+            sections["discovery"] = "Skipped (opt-in — pass --discover / discover=True to run ffuf/gobuster)."
 
         # ── Screenshot ──
         shot_r = self.take_screenshot(base_url)
@@ -1435,6 +1498,12 @@ Report:"""
 
 ### Katana (Crawled URLs)
 {chr(10).join(urls[:50]) or 'None'}
+
+### Sitemap / robots.txt
+{sections.get('sitemap', 'n/a')}
+
+### Content Discovery (ffuf/gobuster)
+{sections.get('discovery', 'n/a')}
 
 ### Screenshot
 {sections['screenshot']}
@@ -2188,7 +2257,7 @@ Report:"""
         return report.impact_line(f)
 
     def bug_bounty(self, target: str, validate: bool = True, force: bool = False,
-                   cookie: str = "", owner: str = "", attacker: str = "") -> dict:
+                   cookie: str = "", owner: str = "", attacker: str = "", discover: bool = False) -> dict:
         """Full bug-bounty hunt: recon pipeline -> parse findings -> CVE/exploit
         lookup -> (validate) -> structured PoC report. Authorized targets only.
         cookie carries a logged-in session so the crawl + injection probe cover
@@ -2229,7 +2298,7 @@ Report:"""
                     pass
 
         # ── Stage 1: Recon pipeline (nmap->subfinder->httpx->nuclei->katana) ──
-        pipeline = self.full_pipeline(target, cookie=cookie)
+        pipeline = self.full_pipeline(target, cookie=cookie, discover=discover)
         pdata = pipeline.get("data", {})
         nuclei_raw = pdata.get("sections", {}).get("nuclei", "")
         _recon_art = []
@@ -2438,7 +2507,7 @@ Report:"""
     # =====================================
     # FULL RECON WORKFLOW
     # =====================================
-    def full_recon(self, target: str, force: bool = False) -> dict:
+    def full_recon(self, target: str, force: bool = False, discover: bool = False) -> dict:
 
         if not target:
             return {"success": False, "message": "Target missing.", "data": {}}
@@ -2479,6 +2548,23 @@ Report:"""
         print("[ULTRON] Running Nuclei...")
         nuclei_result = self.nuclei_scan(base_url)
         sections["nuclei"] = nuclei_result.get("message", "Failed.")
+
+        # ── Sitemap discovery (PASSIVE, always-on) + content discovery (OPT-IN) ──
+        try:
+            _sm = _sitemap_paths(base_url)
+            sections["sitemap"] = (f"{len(_sm)} page(s) from sitemap.xml / robots.txt:\n"
+                                   + "\n".join(_sm[:40]) + (f"\n...and {len(_sm) - 40} more" if len(_sm) > 40 else "")
+                                   ) if _sm else "No sitemap.xml / robots.txt paths found."
+        except Exception as e:
+            sections["sitemap"] = f"Sitemap discovery skipped: {e}"
+        if discover:
+            print("[ULTRON] Content discovery (opt-in): ffuf/gobuster...")
+            try:
+                sections["discovery"] = self.content_discovery(target).get("message", "no output")
+            except Exception as e:
+                sections["discovery"] = f"Content discovery skipped: {e}"
+        else:
+            sections["discovery"] = "Skipped (opt-in — pass --discover to run ffuf/gobuster)."
 
         # Reachability gate: if httpx got NO response, the target wasn't actually
         # assessed — empty nuclei/nmap then mean TOOL FAILURE, not a clean target.
@@ -2553,6 +2639,12 @@ Report:"""
 
 ### Nuclei
 {sections['nuclei']}
+
+### Sitemap / robots.txt
+{sections.get('sitemap', 'n/a')}
+
+### Content Discovery (ffuf/gobuster)
+{sections.get('discovery', 'n/a')}
 
 ---
 
@@ -4057,14 +4149,16 @@ Report:"""
                 return self.nuclei_scan(target, parameters.get("severity", "medium,high,critical"))
 
             elif action == "full_recon":
-                return self.full_recon(target, parameters.get("force", False))
+                return self.full_recon(target, parameters.get("force", False),
+                                       parameters.get("discover", False))
 
             elif action == "full_pipeline":
-                return self.full_pipeline(target)
+                return self.full_pipeline(target, discover=parameters.get("discover", False))
 
             elif action == "bug_bounty":
                 return self.bug_bounty(target, parameters.get("validate", True),
-                                       parameters.get("force", False))
+                                       parameters.get("force", False),
+                                       discover=parameters.get("discover", False))
 
             elif action == "katana_crawl":
                 return self.katana_crawl(target, parameters.get("depth", 3))

@@ -114,9 +114,9 @@ def main() -> int:
 
     sp = sub.add_parser("scan", help="Nmap port scan")
     sp.add_argument("target"); sp.add_argument("--type", default="basic")
-    sp_rc = add("recon", "Full recon pipeline (nmap→subfinder→httpx→nuclei→katana)", "target"); sp_rc.add_argument("--force", action="store_true")
+    sp_rc = add("recon", "Full recon pipeline (nmap→subfinder→httpx→nuclei→katana)", "target"); sp_rc.add_argument("--force", action="store_true"); sp_rc.add_argument("--discover", action="store_true", help="also brute hidden paths (ffuf/gobuster) — slower/noisier")
     add("cve", "Search NVD for CVEs by keyword", "keyword")
-    sp_bb = add("bugbounty", "Full bug-bounty workflow → validated PoC report", "target"); sp_bb.add_argument("--force", action="store_true")
+    sp_bb = add("bugbounty", "Full bug-bounty workflow → validated PoC report", "target"); sp_bb.add_argument("--force", action="store_true"); sp_bb.add_argument("--discover", action="store_true", help="also brute hidden paths (ffuf/gobuster) — slower/noisier")
     sp_bb.add_argument("--owner", default=""); sp_bb.add_argument("--attacker", default="")   # IDOR oracle principals (else auto from 2 sessions)
     add("burp", "Ingest a Burp HTTP-history XML export → endpoint inventory", "path")
     add("scope-setup", "Parse a pasted program policy (text file) → set in/out scope + rules", "policyfile")
@@ -164,9 +164,9 @@ def main() -> int:
     a = p.parse_args()
     c = a.cmd
     if c == "scan":        return _run("nmap_scan", target=a.target, scan_type=a.type)
-    if c == "recon":       return _run("full_recon", target=a.target, force=getattr(a,"force",False))
+    if c == "recon":       return _run("full_recon", target=a.target, force=getattr(a,"force",False), discover=getattr(a,"discover",False))
     if c == "cve":         return _run("search_cve", keyword=a.keyword)
-    if c == "bugbounty":   return _run("bug_bounty", target=a.target, force=getattr(a,"force",False), owner=a.owner, attacker=a.attacker)
+    if c == "bugbounty":   return _run("bug_bounty", target=a.target, force=getattr(a,"force",False), owner=a.owner, attacker=a.attacker, discover=getattr(a,"discover",False))
     if c == "burp":        return _run("ingest_burp", path=a.path)
     if c == "scope-setup":
         try:
