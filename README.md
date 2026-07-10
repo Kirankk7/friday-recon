@@ -42,21 +42,30 @@ ollama pull qwen2.5:7b          # local reasoning model
 ```bash
 # recon
 python cli.py scan example.com              # nmap port scan (with scan diffing)
-python cli.py recon example.com             # full pipeline: nmap→subfinder→httpx→nuclei→katana
-python cli.py discover example.com          # content discovery (ffuf/gobuster)
+python cli.py recon example.com [--discover] # full pipeline: nmap→subfinder→httpx→nuclei→katana→sitemap
+                                            #   subfinder auto-apexes (www.x.com→x.com); sitemap.xml+robots
+                                            #   paths always in the report; --discover adds ffuf/gobuster brute
+python cli.py discover example.com          # content discovery (ffuf/gobuster), standalone
 python cli.py spacrawl example.com          # render SPA → capture API surface
 python cli.py crawl example.com             # multi-page BFS crawl → parameterized URLs
 
 # bug bounty
-python cli.py bugbounty example.com         # full hunt → validated PoC report on your Desktop
+python cli.py bugbounty example.com [--discover]  # full hunt → validated PoC report on your Desktop (--discover = +dir-brute)
 python cli.py proxy --port 8081             # live-capture proxy (browse authed → inventory)
 python cli.py capture example.com           # show the captured endpoint/param inventory
 python cli.py scan-captured example.com     # IDOR/BOLA across captured object-id endpoints
 python cli.py graphql https://t.com/graphql # GraphQL introspection + privileged-mutation hunt
-python cli.py idor https://t.com/api/1 --owner userA --attacker userB   # IDOR/BOLA check
+python cli.py idor https://t.com/api/1 --owner userA --attacker userB   # read IDOR/BOLA check (owner vs attacker vs anon)
+python cli.py write-bola https://t.com/api/user/1 --field email --owner userA --attacker userB [--verify-url <read-url>]
+                                            #   OPT-IN write-BOLA: attacker mutates owner's field, verify+revert (benign fields only)
 python cli.py session-set bob <cookie>      # register a principal for authz testing
 python cli.py sessions                      # list authz-test sessions
 python cli.py evidence https://t.com/find   # re-probe a finding → capture evidence
+
+# F4 execution timeline (immutable run record → replay → submission package)
+python cli.py timeline [<run_id>]           # list recent runs, or render one run's stage timeline
+python cli.py replay <run_id> [--step full|recon|probe]   # rerun a recorded run (active scan)
+python cli.py package <run_id>              # zip run (timeline+artifacts+report+evidence) → submission
 
 # intel
 python cli.py cve log4j                     # NVD CVE lookup
