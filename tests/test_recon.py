@@ -61,6 +61,19 @@ def test_ht_refuses_arg_injection():
 # ── validation gate ─────────────────────────────────────────────────────────────
 from agents.ultron.ultron_agent import ultron_agent as U
 
+def test_apex_domain_for_subfinder():
+    """Subfinder must enumerate the registrable APEX — 'www.x.com' was giving 0 subs because
+    subfinder looked for '*.www.x.com'. (bhavansdubai.com dogfood: 0 -> 5 subs.)"""
+    a = _ult._apex_domain
+    assert a("www.bhavansdubai.com") == "bhavansdubai.com"
+    assert a("https://www.bhavansdubai.com/x") == "bhavansdubai.com"
+    assert a("lms.bhavansdubai.com") == "bhavansdubai.com"
+    assert a("bhavansdubai.com") == "bhavansdubai.com"          # apex unchanged
+    assert a("shop.example.co.uk") == "example.co.uk"           # two-part TLD kept
+    assert a("a.b.example.com") == "example.com"
+    assert a("10.0.0.1") == "10.0.0.1" and a("localhost") == "localhost"  # IP/host unchanged
+
+
 def test_gate_keeps_real_finding():
     f = {"template": "CVE-2021-44228", "severity": "critical",
          "url": "https://t.com/api", "cve": "CVE-2021-44228", "validated": True}
@@ -380,8 +393,20 @@ def test_plan_skips_irrelevant():
 
 
 def test_scope_guard_flags_saas():
-    assert _ult._scope_check("foo.herokuapp.com")
-    assert not _ult._scope_check("example.com")
+    # scope-independent: a SaaS host is flagged regardless of scope; a plain host with NO
+    # program scope loaded is not. Back up/clear the user's data/scope.json so this is
+    # deterministic (it used to fail when a live engagement scope was set).
+    import os
+    sc = os.path.join("data", "scope.json"); bak = sc + ".scopetest.bak"
+    had = os.path.exists(sc)
+    if had:
+        os.replace(sc, bak)
+    try:
+        assert _ult._scope_check("foo.herokuapp.com")     # SaaS host -> flagged even with no scope
+        assert not _ult._scope_check("example.com")        # plain host, no scope loaded -> no note
+    finally:
+        if had:
+            os.replace(bak, sc)
 
 def test_content_discovery_parsers(monkeypatch):
     import shutil

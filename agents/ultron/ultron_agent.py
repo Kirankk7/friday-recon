@@ -593,6 +593,34 @@ def _clean_site(target: str) -> str:
     return t.strip(". ") or "unknown"
 
 
+# Two-part public suffixes where the registrable domain is the last THREE labels
+# (e.g. example.co.uk, site.com.au). Everything else = last two labels.
+_MULTI_TLDS = frozenset((
+    "co.uk", "org.uk", "ac.uk", "gov.uk", "me.uk", "com.au", "net.au", "org.au", "gov.au",
+    "edu.au", "co.nz", "com.br", "com.sg", "com.my", "com.tr", "com.mx", "com.ar", "com.cn",
+    "co.jp", "co.kr", "co.za", "co.in", "net.in", "org.in", "gen.in", "firm.in", "ind.in",
+    "gov.in", "ac.in", "edu.in", "res.in", "co.il", "co.id", "or.id", "ac.id", "com.hk",
+    "com.ph", "com.vn", "com.eg", "com.sa", "com.ng", "com.pk", "com.bd", "com.ua", "ac.ae",
+    "co.ae", "gov.ae", "net.ae", "org.ae", "sch.ae", "mil.ae",
+))
+
+
+def _apex_domain(target: str) -> str:
+    """The registrable (apex / eTLD+1) domain for a host. Subfinder must run on the APEX —
+    given 'www.bhavansdubai.com' it enumerates '*.www.bhavansdubai.com' = nothing, so we
+    strip down to 'bhavansdubai.com'. Handles two-part TLDs (example.co.uk -> example.co.uk)."""
+    host = re.sub(r"^https?://", "", (target or "").strip().lower()).split("/")[0].split(":")[0]
+    host = host.strip(".")
+    if not host or re.match(r"^\d{1,3}(\.\d{1,3}){3}$", host):   # empty or an IP -> unchanged
+        return host
+    labels = host.split(".")
+    if len(labels) <= 2:
+        return host
+    if ".".join(labels[-2:]) in _MULTI_TLDS:
+        return ".".join(labels[-3:])
+    return ".".join(labels[-2:])
+
+
 def _report_type_target(name: str) -> tuple:
     """Split a save_report `name` into (type-label, target). full_recon passes a bare
     target; full_pipeline/bug_bounty/find_exploits prefix it with their type."""
@@ -812,6 +840,9 @@ class UltronAgent:
         if not domain:
             return {"success": False, "message": "Domain missing.", "data": {}}
 
+        # subfinder enumerates CHILDREN of what it's given — run it on the registrable APEX
+        # so 'www.x.com' (or any subdomain) finds the whole domain's subs, not '*.www.x.com'.
+        domain = _apex_domain(domain)
         print(f"[ULTRON] Subfinder: {domain}")
         output = run_cmd(["subfinder", "-d", domain, "-silent"], timeout=60)
 
