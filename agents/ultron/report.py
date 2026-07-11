@@ -364,8 +364,11 @@ def format_bb_report(target, findings, exploits_map, pipeline_data, validated):
                 from core import evidence as _ev
                 _obj = _ev.build(f, target)
                 lines.append(f"- **Weakness:** {_obj['cwe']['id']} — {_obj['cwe']['name']}")
-                lines.append(f"- **CVSS 3.1 (preliminary):** {_obj['cvss']['score']} "
-                             f"({_obj['cvss']['severity']}) `{_obj['cvss']['vector']}`")
+                _cv = _obj['cvss']
+                _pv = _cv.get('provisional')
+                lines.append(f"- **CVSS 3.1 (preliminary):** {'up to ' if _pv else ''}{_cv['score']} "
+                             f"({_cv['severity']})"
+                             f"{' — candidate (unconfirmed, provisional)' if _pv else ''} `{_cv['vector']}`")
             except Exception:
                 pass
             if f.get("evidence"):

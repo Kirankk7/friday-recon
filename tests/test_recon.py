@@ -146,6 +146,19 @@ def test_impact_data_driven():
     assert "`/api/user/5`" in line2 and "Candidate" in line2
     line.encode("cp1252"); line2.encode("cp1252")
 
+
+def test_evidence_cvss_provisional():
+    """Confidence-gated CVSS: a REPRODUCED sqli shows the full 9.8; a CANDIDATE must render
+    'up to' + a candidate caveat, never a bare confirmed-looking 9.8 (triager overclaim FP)."""
+    from core import evidence
+    conf = evidence.build({"template": "sqli-error-based", "severity": "high", "url": "http://t/s?q=1",
+                           "validated": True, "_gate": {"confidence": "reproduced"}}, "t")
+    assert not conf["cvss"]["provisional"] and "up to" not in evidence.to_markdown(conf)
+    cand = evidence.build({"template": "sqli-error-based", "severity": "high", "url": "http://t/s?q=1",
+                           "_gate": {"confidence": "candidate"}}, "t")
+    md = evidence.to_markdown(cand)
+    assert cand["cvss"]["provisional"] and "up to" in md and "candidate" in md.lower()
+
 def test_report_dedup_clustering():
     """Same class on N endpoints of one host collapses to ONE grouped finding (parity)."""
     from agents.ultron import report

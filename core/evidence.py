@@ -112,12 +112,20 @@ def build(finding: dict, target: str = "") -> dict:
     sev = (finding.get("severity") or "info").lower()
     cls = _vuln_class(tmpl)
     cwe = _match(_CWE, tmpl) or ("CWE-Other", "Other")
+    gate = finding.get("_gate", {}) or {}
+    confidence = gate.get("confidence") or ("reproduced" if finding.get("validated") else "candidate")
+    # A CANDIDATE (unconfirmed) finding must NOT present the full class-max CVSS as if proven — a
+    # triager reads "9.8 Critical" on a 4/7 candidate as an overclaim and distrusts the whole report.
+    # Mark the score PROVISIONAL unless the gate says the finding is confirmed/reproduced; exporters
+    # then render it "up to X" with a candidate caveat instead of a bare confirmed-looking number.
+    provisional = confidence not in ("reproduced", "confirmed", "validated")
     cvss = _match(_CVSS, tmpl)
     if cvss:
-        cvss = {"vector": cvss[0], "score": cvss[1], "severity": cvss[2], "preliminary": True}
+        cvss = {"vector": cvss[0], "score": cvss[1], "severity": cvss[2],
+                "preliminary": True, "provisional": provisional}
     else:
-        cvss = {"vector": "", "score": _SEV_FALLBACK.get(sev, 0.0), "severity": sev.title(), "preliminary": True}
-    gate = finding.get("_gate", {}) or {}
+        cvss = {"vector": "", "score": _SEV_FALLBACK.get(sev, 0.0), "severity": sev.title(),
+                "preliminary": True, "provisional": provisional}
     return {
         # Bump when the shape changes (screenshots, replay_id, HTML exporter, …). The object is
         # IMMUTABLE: built once, every exporter reads from it — never edit it in place.
@@ -128,7 +136,7 @@ def build(finding: dict, target: str = "") -> dict:
             "class": cls,
             "severity": sev,
             "tier": gate.get("tier", ""),
-            "confidence": gate.get("confidence") or ("reproduced" if finding.get("validated") else "candidate"),
+            "confidence": confidence,
             "generated": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
         },
         "endpoint": finding.get("url", ""),
@@ -155,13 +163,17 @@ def to_markdown(obj: dict) -> str:
     cvss, cwe = obj["cvss"], obj["cwe"]
     steps = "\n".join(f"{i+1}. {s}" for i, s in enumerate(obj["steps"])) or "1. See request/response below."
     prelim = " *(preliminary, tool-suggested)*" if cvss.get("preliminary") else ""
+    # confidence-gated CVSS: a candidate shows "up to X" + caveat, not a confirmed-looking number.
+    _prov = cvss.get("provisional")
+    _cvss_txt = (f"{'up to ' if _prov else ''}{cvss.get('score')} ({cvss.get('severity')})"
+                 + (" — **candidate: unconfirmed, provisional until exploitation is proven**" if _prov else ""))
     L = [
         f"# {m['template']} — {m['severity'].title()}",
         "",
         f"**Target:** {m['target']}  ",
         f"**Endpoint:** `{obj['endpoint']}`  ",
         f"**Weakness:** {cwe['id']} — {cwe['name']}  ",
-        f"**CVSS 3.1:** {cvss.get('score')} ({cvss.get('severity')}){prelim}  ",
+        f"**CVSS 3.1:** {_cvss_txt}{prelim}  ",
         (f"`{cvss.get('vector')}`  " if cvss.get("vector") else ""),
         f"**Confidence:** {m['confidence']}  ·  **Tier:** {m['tier']}",
         "",
