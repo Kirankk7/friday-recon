@@ -277,6 +277,20 @@ _SQL_ERROR_SIGNS = re.compile(
     # sqlite (python DB-API) — these are DB-specific enough not to false-match generic 500s
     r"sqlite3\.\w*error|unrecognized token|no such (?:table|column)|sql logic error",
     re.IGNORECASE)
+# Type / numeric-cast / input-validation error signatures. A quote that flips 200->500
+# by breaking an int()/parseInt() cast is a VALIDATION error, NOT injection — the endpoint
+# rejects any non-numeric input, not the quote specifically. Used to DROP injection-error-
+# anomaly false-positives (DSVW `?size=` dogfood FP: int("32'") -> ValueError). Kept tight to
+# numeric-cast failures so it never masks a real injection anomaly (file-open / SQL / XPath
+# breaks do NOT match). Signature-based (not a differential re-test): a `1x` control probe
+# would also 500 numeric SQLi (`id=1x` -> sqlite "unrecognized token"), false-dropping real bugs.
+_TYPE_ERROR_SIGNS = re.compile(
+    r"invalid literal for int|could not convert string to (?:float|int)|"
+    r"invalid input syntax for (?:type )?(?:integer|numeric|bigint|double)|"
+    r"numberformatexception|for input string:|"          # Java Integer.parseInt("32'")
+    r"cannot convert.*? to (?:int|number|numeric)|is not a valid (?:integer|number)|"
+    r"System\.FormatException",
+    re.IGNORECASE)
 # Unique-ish token for reflected-XSS detection (with angle brackets to prove no encoding).
 _XSS_MARKER = "jvz9xqk7z"
 # NoSQL injection error signatures (Mongo/Mongoose/CouchDB parse errors leaking into the page).
@@ -1667,6 +1681,13 @@ Report:"""
                         # flips it to a server error / empty body = query broke (classic SQLi).
                         anomaly = (base_status == 200 and (base_len or 0) > 200
                                    and (r.status_code >= 500 or len(body) == 0))
+                        # FP-kill: a 500 caused by a numeric-cast/validation error (int("32'")
+                        # -> ValueError) is NOT injection — the param rejects any non-numeric
+                        # input, not the quote. Drop the anomaly when the post-inject body carries
+                        # a type-error signature the baseline lacks. (DSVW `?size=` dogfood FP.)
+                        if (anomaly and _TYPE_ERROR_SIGNS.search(body)
+                                and not (base_body and _TYPE_ERROR_SIGNS.search(base_body))):
+                            anomaly = False
                         if m:
                             # a real DB-error signature = CONFIRMED error-based SQLi.
                             out.append({

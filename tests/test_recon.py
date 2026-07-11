@@ -392,6 +392,19 @@ def test_probe_sqli_anomaly(monkeypatch):
     assert not [r for r in res if r["template"] == "sqli-error-based"]  # must NOT over-claim SQLi
 
 
+def test_probe_type_error_dropped(monkeypatch):
+    # FP-kill (DSVW `?size=` dogfood): a quote -> 500 via numeric-cast error (int("32'") ->
+    # ValueError) is input-validation, NOT injection — must be DROPPED, not flagged as anomaly.
+    def _get(url, timeout=8, headers=None, allow_redirects=True):
+        if "%27" in url:
+            return _FakeResp("Traceback...\nValueError: invalid literal for int() with base 10: \"32'\"", 500)
+        return _FakeResp("healthy page " * 100, 200)
+    _patch_http(monkeypatch, _get)
+    res = _ult.ultron_agent._probe_injection(["http://t.com/n.aspx?size=32"])
+    assert not [r for r in res if r["template"] == "injection-error-anomaly"]  # dropped
+    assert not [r for r in res if r["template"] == "sqli-error-based"]
+
+
 # ── Feature B: tailored test plan ───────────────────────────────────────────────
 def test_plan_sqli_subtypes():
     findings = [{"template": "sqli-error-based", "severity": "high",
