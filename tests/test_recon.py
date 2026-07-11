@@ -405,6 +405,30 @@ def test_probe_type_error_dropped(monkeypatch):
     assert not [r for r in res if r["template"] == "sqli-error-based"]
 
 
+def test_probe_xss_context(monkeypatch):
+    # reflection-context classifier: marker in a comment/rawtext element is inert (dropped);
+    # marker in raw HTML element context is executable (flagged).
+    mark = _ult._XSS_MARKER + "<x>"
+    def _mk(body):
+        def _get(url, timeout=8, headers=None, allow_redirects=True):
+            if _ult._XSS_MARKER in url:
+                return _FakeResp(body.replace("MARK", mark), 200)
+            return _FakeResp("normal " * 50, 200)
+        return _get
+    _patch_http(monkeypatch, _mk("<html><!-- MARK --></html>"))
+    assert not [r for r in _ult.ultron_agent._probe_injection(["http://t.com/p?q=1"])
+                if r["template"] == "xss-reflected"]                     # comment -> dropped
+    _patch_http(monkeypatch, _mk("<div>MARK</div>"))
+    x = [r for r in _ult.ultron_agent._probe_injection(["http://t.com/p?q=1"])
+         if r["template"] == "xss-reflected"]
+    assert x and "executable" in x[0]["evidence"]                       # raw HTML -> flagged executable
+    # multi-occurrence: attr AND raw-html reflection -> pick the STRONGEST (executable)
+    _patch_http(monkeypatch, _mk('<input value="MARK"><div>MARK</div>'))
+    xm = [r for r in _ult.ultron_agent._probe_injection(["http://t.com/p?q=1"])
+          if r["template"] == "xss-reflected"]
+    assert xm and "executable" in xm[0]["evidence"]
+
+
 # ── Feature B: tailored test plan ───────────────────────────────────────────────
 def test_plan_sqli_subtypes():
     findings = [{"template": "sqli-error-based", "severity": "high",

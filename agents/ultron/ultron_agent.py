@@ -418,6 +418,45 @@ _LFI_SIGN = re.compile(r"root:.?:0:0:|\[boot loader\]|\[fonts\]")        # /etc/
 _REDIR_MARKER = "jvz9redir.example"
 
 
+def _xss_ctx_at(body: str, pos: int) -> str:
+    """Classify the reflection context at ONE offset. Deterministic string-scan (no parser):
+      'html'    — raw element context: `<x>` starts a tag → EXECUTABLE (escalatable to <svg onload>)
+      'attr'    — inside a tag's attributes: needs a quote/bracket breakout → candidate, not proven
+      'comment' — inside <!-- --> : inert unless the attacker can also inject `-->` → drop
+      'rawtext' — inside script/style/title/textarea: `<x>` is literal text, no tag parse → drop
+    """
+    before = body[:pos]
+    low = before.lower()
+    if before.rfind("<!--") > before.rfind("-->"):
+        return "comment"
+    for tag in ("script", "style", "title", "textarea"):
+        if low.rfind("<" + tag) > low.rfind("</" + tag):
+            return "rawtext"
+    if before.rfind("<") > before.rfind(">"):     # unclosed '<' before us = inside a tag
+        return "attr"
+    return "html"
+
+
+def _xss_reflection_ctx(body: str, marker: str) -> str:
+    """Best (most-exploitable) context across ALL reflections of the marker. A value often
+    echoes in several places (e.g. a JS var AND a visible `<b>...</b>`); the finding's confidence
+    must reflect the STRONGEST context, not just the first occurrence. (Encoding already handled
+    upstream: an HTML-encoded reflection is `&lt;x&gt;` so exact-match never fires.)"""
+    rank = {"html": 3, "attr": 2, "comment": 0, "rawtext": 0}
+    best, best_rank, start = "comment", -1, 0
+    while True:
+        pos = body.find(marker, start)
+        if pos == -1:
+            break
+        c = _xss_ctx_at(body, pos)
+        if rank[c] > best_rank:
+            best, best_rank = c, rank[c]
+        if c == "html":
+            break                                 # nothing beats a raw-element reflection
+        start = pos + 1
+    return best
+
+
 # Test-planner knowledge (SQLI_PAYLOADS / TEST_REFS) moved to agents/ultron/report.py (Phase B).
 
 _KB_WORDLIST_DIR = os.path.join("agents", "ultron", "knowledge", "wordlists")
@@ -1737,15 +1776,30 @@ Report:"""
                         except Exception:
                             _ct = ""
                         _html_ctx = (not _ct) or ("html" in _ct) or ("xml" in _ct)
-                        if marker in (r.text or "") and _html_ctx:
-                            out.append({
-                                "template": "xss-reflected", "severity": "medium",
-                                "url": purl, "cve": None, "validated": True,
-                                "evidence": f"Input '{marker}' reflected unencoded in an HTML response for param '{k}'.",
-                                "repro": [f"Send: GET {purl}",
-                                          f"Find the literal string '{marker}' (angle brackets intact) in the response",
-                                          "Escalate to a script payload only under authorized manual testing"],
-                            })
+                        _body_x = r.text or ""
+                        _pos = _body_x.find(marker)
+                        # context classifier: a reflection only executes if `<x>` can start a NEW
+                        # element. Reflections inside a comment / rawtext element (script/title/
+                        # textarea) are inert → drop (don't claim what we can't prove). An attribute-
+                        # context reflection needs a breakout → report as a lower-confidence candidate.
+                        if _pos != -1 and _html_ctx:
+                            _ctx = _xss_reflection_ctx(_body_x, marker)
+                            if _ctx not in ("comment", "rawtext"):
+                                _exec = (_ctx == "html")
+                                out.append({
+                                    "template": "xss-reflected", "severity": "medium",
+                                    "url": purl, "cve": None, "validated": True,
+                                    "evidence": (f"Input '{marker}' reflected unencoded in "
+                                                 + ("an executable HTML element context (`<x>` introduces a new tag)"
+                                                    if _exec else
+                                                    "a tag/attribute context (needs a quote/bracket breakout to execute)")
+                                                 + f" for param '{k}'."),
+                                    "repro": [f"Send: GET {purl}",
+                                              f"Find the literal string '{marker}' (angle brackets intact) in the response",
+                                              ("Escalate to a script payload (e.g. <svg onload=...>) under authorized manual testing"
+                                               if _exec else
+                                               "Confirm a quote/bracket breakout from the attribute before escalating")],
+                                })
                     except Exception:
                         pass
                     # --- param-name-routed tests (dork-derived): fire only the test the
