@@ -437,6 +437,26 @@ def _xss_ctx_at(body: str, pos: int) -> str:
     return "html"
 
 
+def _raw_http(url: str, headers: dict = None, method: str = "GET", body: str = "") -> str:
+    """The literal HTTP request a probe sent — a triager needs the REAL request (method, path,
+    Host, headers), not a fabricated `GET {url} HTTP/1.1`. Deterministic string assembly."""
+    from urllib.parse import urlsplit
+    p = urlsplit(url or "")
+    path = (p.path or "/") + (("?" + p.query) if p.query else "")
+    lines = [f"{method} {path} HTTP/1.1", f"Host: {p.netloc}"]
+    for k, v in (headers or {}).items():
+        lines.append(f"{k}: {v}")
+    if body:
+        lines += ["", body]
+    return "\n".join(lines)
+
+
+def _resp_excerpt(status, body: str, limit: int = 1200) -> str:
+    """Status line + a bounded response-body excerpt for the Evidence Object (build() re-caps at 2000)."""
+    b = body or ""
+    return f"HTTP {status} ({len(b)}b)\n" + b[:limit]
+
+
 def _xss_reflection_ctx(body: str, marker: str) -> str:
     """Best (most-exploitable) context across ALL reflections of the marker. A value often
     echoes in several places (e.g. a JS var AND a visible `<b>...</b>`); the finding's confidence
@@ -1733,6 +1753,8 @@ Report:"""
                                 "template": "sqli-error-based", "severity": "high",
                                 "url": purl, "cve": None, "validated": True,
                                 "evidence": f"DB error '{m.group(0)}' surfaced after injecting a single quote into param '{k}'.",
+                                "request": _raw_http(purl, _hdrs),
+                                "response": _resp_excerpt(r.status_code, body),
                                 "repro": [f"Baseline: GET {u}  -> HTTP {base_status}/{base_len}b",
                                           f"Inject:   GET {purl}",
                                           "Observe the database error in the response body"],
@@ -1750,6 +1772,8 @@ Report:"""
                                              f"HTTP 200/{base_len}b to HTTP {r.status_code}/{len(body)}b, with no DB-error "
                                              f"string. Injection CANDIDATE — class UNCONFIRMED (SQLi / LFI / XPath / "
                                              f"command / parser error); confirm the class manually before reporting."),
+                                "request": _raw_http(purl, _hdrs),
+                                "response": _resp_excerpt(r.status_code, body),
                                 "repro": [f"Baseline: GET {u}  -> HTTP {base_status}/{base_len}b",
                                           f"Inject:   GET {purl}",
                                           f"Observe the response break to HTTP {r.status_code}/{len(body)}b (class unconfirmed)"],
@@ -1794,6 +1818,8 @@ Report:"""
                                                     if _exec else
                                                     "a tag/attribute context (needs a quote/bracket breakout to execute)")
                                                  + f" for param '{k}'."),
+                                    "request": _raw_http(purl, _hdrs),
+                                    "response": _resp_excerpt(r.status_code, _body_x),
                                     "repro": [f"Send: GET {purl}",
                                               f"Find the literal string '{marker}' (angle brackets intact) in the response",
                                               ("Escalate to a script payload (e.g. <svg onload=...>) under authorized manual testing"

@@ -401,6 +401,10 @@ def test_probe_flags_sqli_and_xss(monkeypatch):
     assert "sqli-error-based" in tmpls and "xss-reflected" in tmpls
     assert not any("flat.html" in r["url"] for r in res)
     assert all(r["validated"] and r["evidence"] and r["repro"] for r in res)
+    # raw request/response captured (not the fabricated `GET {url} HTTP/1.1` fallback)
+    sq = [r for r in res if r["template"] == "sqli-error-based"][0]
+    assert sq["request"].startswith("GET ") and "Host:" in sq["request"]
+    assert "HTTP" in sq["response"]
 
 
 def test_probe_sqli_anomaly(monkeypatch):
