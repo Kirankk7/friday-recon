@@ -159,6 +159,18 @@ def test_evidence_cvss_provisional():
     md = evidence.to_markdown(cand)
     assert cand["cvss"]["provisional"] and "up to" in md and "candidate" in md.lower()
 
+
+def test_evidence_preconditions():
+    """Attacker preconditions derived deterministically from the CVSS vector: sqli (PR:N/UI:N/AV:N)
+    = unauthenticated·network·no-UI; xss (UI:R) = requires victim interaction."""
+    from core import evidence
+    o = evidence.build({"template": "sqli-error-based", "severity": "high", "url": "http://t/s?q=1"}, "t")
+    s = o["preconditions"]["summary"].lower()
+    assert "unauthenticated" in s and "network" in s and "no user interaction" in s
+    assert "Preconditions:" in evidence.to_markdown(o)
+    x = evidence.build({"template": "xss-reflected", "severity": "medium", "url": "http://t/x?q=1"}, "t")
+    assert "victim interaction" in x["preconditions"]["summary"].lower()
+
 def test_report_dedup_clustering():
     """Same class on N endpoints of one host collapses to ONE grouped finding (parity)."""
     from agents.ultron import report

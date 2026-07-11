@@ -106,6 +106,30 @@ def curl_for(finding: dict) -> str:
     return f"curl -sk{flag}{body_part} '{url}'"
 
 
+# CVSS vector metric -> plain-English attacker precondition. Deterministic: the vector ALREADY
+# encodes what a triager needs (PR=privileges, UI=interaction, AV=access) — surface it instead of
+# making them parse `CVSS:3.1/AV:N/.../PR:N/UI:N`. Highest-exploitability = unauth · network · no-UI.
+_AV = {"N": "network/remote", "A": "adjacent-network", "L": "local access", "P": "physical access"}
+_PR = {"N": "unauthenticated (no account)", "L": "requires an authenticated low-priv user",
+       "H": "requires a high-priv / admin account"}
+_UI = {"N": "no user interaction", "R": "requires victim interaction (e.g. a click)"}
+
+
+def _preconditions(vector: str) -> dict:
+    """Attacker preconditions derived from the CVSS vector — auth / interaction / access. {} if
+    no vector (fallback-scored findings), so exporters can skip the line cleanly."""
+    d = {}
+    for part in (vector or "").split("/"):
+        if ":" in part:
+            k, v = part.split(":", 1)
+            d[k] = v
+    if not d.get("PR"):
+        return {}
+    auth, av, ui = _PR.get(d.get("PR", "")), _AV.get(d.get("AV", "")), _UI.get(d.get("UI", ""))
+    return {"auth": auth, "interaction": ui, "access": av,
+            "summary": " · ".join(x for x in (auth, av, ui) if x)}
+
+
 def build(finding: dict, target: str = "") -> dict:
     """A gate-passed finding -> the canonical Evidence Object."""
     tmpl = finding.get("template", "finding")
@@ -142,6 +166,7 @@ def build(finding: dict, target: str = "") -> dict:
         "endpoint": finding.get("url", ""),
         "cwe": {"id": cwe[0], "name": cwe[1]},
         "cvss": cvss,
+        "preconditions": _preconditions(cvss.get("vector", "")),
         "evidence": finding.get("evidence", ""),
         "request": finding.get("request", "") or f"GET {finding.get('url','')} HTTP/1.1",
         "response": (finding.get("response", "") or "")[:2000],
@@ -175,6 +200,8 @@ def to_markdown(obj: dict) -> str:
         f"**Weakness:** {cwe['id']} — {cwe['name']}  ",
         f"**CVSS 3.1:** {_cvss_txt}{prelim}  ",
         (f"`{cvss.get('vector')}`  " if cvss.get("vector") else ""),
+        (f"**Preconditions:** {obj['preconditions']['summary']}  "
+         if obj.get("preconditions", {}).get("summary") else None),
         f"**Confidence:** {m['confidence']}  ·  **Tier:** {m['tier']}",
         "",
         "## Summary",

@@ -369,6 +369,9 @@ def format_bb_report(target, findings, exploits_map, pipeline_data, validated):
                 lines.append(f"- **CVSS 3.1 (preliminary):** {'up to ' if _pv else ''}{_cv['score']} "
                              f"({_cv['severity']})"
                              f"{' — candidate (unconfirmed, provisional)' if _pv else ''} `{_cv['vector']}`")
+                _pc = _obj.get('preconditions', {}) or {}
+                if _pc.get('summary'):
+                    lines.append(f"- **Preconditions:** {_pc['summary']}")
             except Exception:
                 pass
             if f.get("evidence"):
