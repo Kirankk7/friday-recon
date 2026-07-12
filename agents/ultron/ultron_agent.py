@@ -3788,6 +3788,53 @@ Report:"""
                 "message": f"CORS: {len(out)} misconfig(s) across {len(seen)} URL(s) — {tt}.",
                 "data": {"findings": out}}
 
+    def secret_scan(self, target, urls=None) -> dict:
+        """v1.3 A4 — secrets / file exposure. Scans crawled JS for hard-coded keys (find_secrets, high-
+        precision prefixes) + extracts JS-baked endpoints, and probes the base host for exposed sensitive
+        files (.git/.env/.DS_Store, confirmed by content signature). Deterministic. Delegates the matching
+        to core.secrets; does the HTTP here. Authorized targets only."""
+        from core import secrets as S
+        base = (target if str(target).startswith("http") else "https://" + str(target)).rstrip("/")
+        cand = list(urls or [])
+        if not cand:
+            try:
+                cand = self.crawl_site(target).get("data", {}).get("urls", [])
+            except Exception:
+                cand = []
+        js = [u for u in ([base] + cand) if ".js" in u.split("?")[0].lower()][:40] or [base]
+        findings, endpoints, seen = [], set(), set()
+        for u in js:
+            if u in seen:
+                continue
+            seen.add(u)
+            try:
+                body = _http_get(u).text or ""
+            except Exception:
+                continue
+            for name, frag in S.find_secrets(body):
+                findings.append({
+                    "template": "exposed-secret", "severity": "high", "url": u, "cve": None, "validated": True,
+                    "evidence": f"{name} hard-coded in {u}: '{frag[:10]}…' (redacted). A key committed into "
+                                f"client-side JS is readable by anyone and usable against its service.",
+                    "repro": [f"GET {u}", f"Locate the {name} value in the response",
+                              "Validate the key against its service — authorized testing only"]})
+            endpoints.update(S.find_endpoints(body))
+        for p, _sigs in S.SENSITIVE_PATHS:
+            purl = base + "/" + p
+            try:
+                r = _http_get(purl)
+                if getattr(r, "status_code", 0) == 200 and S.file_signature(p, r.text or ""):
+                    findings.append({
+                        "template": "sensitive-file", "severity": "high", "url": purl, "cve": None, "validated": True,
+                        "evidence": f"'{p}' is publicly served (HTTP 200 with its signature content) at {purl} — "
+                                    f"source-code / credential / metadata exposure.",
+                        "repro": [f"GET {purl}", f"Observe the '{p}' contents in the response"]})
+            except Exception:
+                continue
+        return {"success": True,
+                "message": f"Secrets/exposure: {len(findings)} finding(s), {len(endpoints)} JS-baked endpoint(s).",
+                "data": {"findings": findings, "endpoints": sorted(endpoints)[:100]}}
+
     def graphql_hunt(self, url: str, as_user: str = "") -> dict:
         """Hunt a GraphQL endpoint (Tier-2): introspection (schema exposure = info disclosure),
         operation inventory, flag privileged-looking mutations, and (if a session is set) check

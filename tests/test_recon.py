@@ -205,6 +205,23 @@ def test_auth_matrix_bola(monkeypatch):
     sm.clear()
     assert "idor-bola" in [x["template"] for x in res["data"]["findings"]]
 
+def test_secrets(monkeypatch):
+    from core import secrets as S
+    names = [n for n, _ in S.find_secrets('k="AKIAIOSFODNN7EXAMPLE"; t="ghp_' + "a" * 36 + '"')]
+    assert "AWS access key id" in names and any("GitHub" in n for n in names)
+    assert not S.find_secrets("normal text with api key secret words")
+    assert any(e.startswith("/api/users") for e in S.find_endpoints('fetch("/api/users?id=1")'))
+    assert S.file_signature(".env", "DB_PASSWORD=x") and not S.file_signature(".git/config", "<html>spa</html>")
+    def g(url, timeout=8, headers=None, allow_redirects=True):
+        if url.endswith("app.js"): return _FakeResp('const K="AKIAIOSFODNN7EXAMPLE";')
+        if url.endswith(".env"):   return _FakeResp("APP_SECRET=abc\nDB_PASSWORD=x", 200)
+        return _FakeResp("<html></html>", 404)
+    _patch_http(monkeypatch, g)
+    tmpls = {f["template"] for f in
+             _ult.ultron_agent.secret_scan("https://t.com", urls=["https://t.com/app.js"])["data"]["findings"]}
+    assert "exposed-secret" in tmpls and "sensitive-file" in tmpls
+
+
 def test_cors_misconfig(monkeypatch):
     class _CR:
         def __init__(s, h): s.text = ""; s.status_code = 200; s.headers = h

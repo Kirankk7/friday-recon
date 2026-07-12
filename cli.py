@@ -135,6 +135,7 @@ def main() -> int:
     add("jwt", "Analyze a JWT — alg:none/weak-HS/jku-SSRF/kid/exp/claims (deterministic, no cracking)", "token")
     add("takeover", "Subdomain-takeover check (dangling-service fingerprints; host, comma-list, or @file)", "hosts")
     add("cors", "CORS misconfig probe (Origin reflection + credentials) over a target + its crawled URLs", "target")
+    add("secrets", "Scan crawled JS for hard-coded keys + probe exposed files (.git/.env/.DS_Store)", "target")
     sp_se = add("session-set", "Register a principal for authz testing (cookie)", "name", "cookie")
     sub.add_parser("sessions", help="List authz-test sessions")
     sp_id = add("idor", "IDOR/BOLA check: owner vs attacker (anon control)", "url")
@@ -221,6 +222,13 @@ def main() -> int:
         print(r.get("message", ""))
         for f in r.get("data", {}).get("findings", []):
             print(f"  [{f['severity'].upper()}] {f['url']}: {f['evidence'][:130]}")
+        return 0 if r.get("success") else 1
+    if c == "secrets":
+        from agents.ultron.ultron_agent import ultron_agent as U
+        r = U.secret_scan(a.target)
+        print(r.get("message", ""))
+        for f in r.get("data", {}).get("findings", []):
+            print(f"  [{f['severity'].upper()}] {f['template']}: {f['url']}")
         return 0 if r.get("success") else 1
     if c == "session-set": return _run("session_set", name=a.name, cookie=a.cookie)
     if c == "sessions":    return _run("session_list")
