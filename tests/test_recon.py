@@ -205,6 +205,22 @@ def test_auth_matrix_bola(monkeypatch):
     sm.clear()
     assert "idor-bola" in [x["template"] for x in res["data"]["findings"]]
 
+def test_oast_ssrf(monkeypatch):
+    import urllib.request, urllib.parse
+    def g_vuln(url, timeout=8, headers=None, allow_redirects=True):
+        q = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(url).query))
+        if q.get("url"):
+            try: urllib.request.urlopen(q["url"], timeout=2).read()   # server-side fetch = blind SSRF -> listener hit
+            except Exception: pass
+        return _FakeResp("")
+    _patch_http(monkeypatch, g_vuln)
+    r = _ult.ultron_agent.oast_ssrf("http://target/fetch?url=x", param="url", wait=3.0)
+    f = r["data"]["findings"]
+    assert f and f[0]["template"] == "ssrf-oob-confirmed" and "CONFIRMED" in f[0]["evidence"] and f[0].get("oob")
+    _patch_http(monkeypatch, lambda url, timeout=8, headers=None, allow_redirects=True: _FakeResp(""))
+    assert not _ult.ultron_agent.oast_ssrf("http://safe/x?url=y", param="url", wait=1.0)["data"]["findings"]
+
+
 def test_secrets(monkeypatch):
     from core import secrets as S
     names = [n for n, _ in S.find_secrets('k="AKIAIOSFODNN7EXAMPLE"; t="ghp_' + "a" * 36 + '"')]

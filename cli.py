@@ -136,6 +136,8 @@ def main() -> int:
     add("takeover", "Subdomain-takeover check (dangling-service fingerprints; host, comma-list, or @file)", "hosts")
     add("cors", "CORS misconfig probe (Origin reflection + credentials) over a target + its crawled URLs", "target")
     add("secrets", "Scan crawled JS for hard-coded keys + probe exposed files (.git/.env/.DS_Store)", "target")
+    sp_oa = add("oast-ssrf", "Confirm BLIND SSRF via an out-of-band callback (local OAST listener)", "url")
+    sp_oa.add_argument("--param", default="url"); sp_oa.add_argument("--wait", type=float, default=3.0)
     sp_se = add("session-set", "Register a principal for authz testing (cookie)", "name", "cookie")
     sub.add_parser("sessions", help="List authz-test sessions")
     sp_id = add("idor", "IDOR/BOLA check: owner vs attacker (anon control)", "url")
@@ -230,6 +232,7 @@ def main() -> int:
         for f in r.get("data", {}).get("findings", []):
             print(f"  [{f['severity'].upper()}] {f['template']}: {f['url']}")
         return 0 if r.get("success") else 1
+    if c == "oast-ssrf":  return _run("oast_ssrf", url=a.url, param=a.param, wait=a.wait)
     if c == "session-set": return _run("session_set", name=a.name, cookie=a.cookie)
     if c == "sessions":    return _run("session_list")
     if c == "idor":        return _run("idor_check", url=a.url, owner=a.owner, attacker=a.attacker)
