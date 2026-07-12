@@ -3726,6 +3726,13 @@ Report:"""
                 "data": {"matrix": rows, "findings": findings, "principals": principals,
                          "table_md": table_md}}
 
+    def jwt_analyze(self, token: str) -> dict:
+        """v1.3 A1 — deterministic JWT structural analysis (alg:none / weak-HS / jku-SSRF / kid /
+        missing-exp / privilege-claims). NOT a cracker: decode + inspect only, no brute/verify.
+        Delegates to core.jwt_analyzer. Feeds findings straight into the gate + Evidence Object."""
+        from core import jwt_analyzer
+        return jwt_analyzer.analyze(token)
+
     def graphql_hunt(self, url: str, as_user: str = "") -> dict:
         """Hunt a GraphQL endpoint (Tier-2): introspection (schema exposure = info disclosure),
         operation inventory, flag privileged-looking mutations, and (if a session is set) check

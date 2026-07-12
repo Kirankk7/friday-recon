@@ -132,6 +132,7 @@ def main() -> int:
     add("ingest-feed", "Ingest a writeup-index page → learn each article", "url")
     add("threat-intel", "Aggregate IOC reputation (IP/domain/URL/hash) across feeds", "ioc")
     add("graphql", "Hunt a GraphQL endpoint (introspection + privileged-mutation inventory)", "url")
+    add("jwt", "Analyze a JWT — alg:none/weak-HS/jku-SSRF/kid/exp/claims (deterministic, no cracking)", "token")
     sp_se = add("session-set", "Register a principal for authz testing (cookie)", "name", "cookie")
     sub.add_parser("sessions", help="List authz-test sessions")
     sp_id = add("idor", "IDOR/BOLA check: owner vs attacker (anon control)", "url")
@@ -190,6 +191,13 @@ def main() -> int:
     if c == "ingest-feed": return _run("ingest_feed", url=a.url)
     if c == "threat-intel": return _run("threat_intel", ioc=a.ioc)
     if c == "graphql":     return _run("graphql_hunt", url=a.url)
+    if c == "jwt":
+        from agents.ultron.ultron_agent import ultron_agent as U
+        r = U.jwt_analyze(a.token)
+        print(r.get("message", ""))
+        for f in r.get("data", {}).get("findings", []):
+            print(f"  [{f['severity'].upper()}] {f['template']}: {f['evidence'][:130]}")
+        return 0 if r.get("success") else 1
     if c == "session-set": return _run("session_set", name=a.name, cookie=a.cookie)
     if c == "sessions":    return _run("session_list")
     if c == "idor":        return _run("idor_check", url=a.url, owner=a.owner, attacker=a.attacker)

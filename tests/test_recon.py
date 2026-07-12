@@ -205,6 +205,22 @@ def test_auth_matrix_bola(monkeypatch):
     sm.clear()
     assert "idor-bola" in [x["template"] for x in res["data"]["findings"]]
 
+def test_jwt_analyzer():
+    import base64, json
+    from core import jwt_analyzer as J
+    def mk(hdr, pl):
+        b = lambda o: base64.urlsafe_b64encode(json.dumps(o).encode()).decode().rstrip("=")
+        return f"{b(hdr)}.{b(pl)}.sig"
+    assert "jwt-alg-none" in {f["template"] for f in
+        J.analyze(mk({"alg": "none"}, {"sub": "1", "exp": 9999999999}))["data"]["findings"]}
+    t2 = {f["template"] for f in
+        J.analyze(mk({"alg": "HS256", "jku": "https://evil/jwks", "kid": "1"}, {"sub": "1", "role": "user"}))["data"]["findings"]}
+    for want in ("jwt-weak-alg", "jwt-jku-ssrf", "jwt-kid-injection", "jwt-missing-exp", "jwt-sensitive-claims"):
+        assert want in t2, want
+    assert not J.analyze(mk({"alg": "RS256"}, {"sub": "1", "iat": 1000, "exp": 4600}))["data"]["findings"]
+    assert not J.analyze("plainstring")["success"]
+
+
 def test_idor_content_aware(monkeypatch):
     # R5: content-aware ownership. Real BOLA (attacker gets owner's EXACT body, crAPI vehicle shape) flags;
     # self-scoped endpoint (each principal gets own same-length body, VAmPI /me) must NOT flag.
