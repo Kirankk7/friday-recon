@@ -205,6 +205,28 @@ def test_auth_matrix_bola(monkeypatch):
     sm.clear()
     assert "idor-bola" in [x["template"] for x in res["data"]["findings"]]
 
+def test_idor_content_aware(monkeypatch):
+    # R5: content-aware ownership. Real BOLA (attacker gets owner's EXACT body, crAPI vehicle shape) flags;
+    # self-scoped endpoint (each principal gets own same-length body, VAmPI /me) must NOT flag.
+    from core import session_manager as sm
+    sm.clear(); sm.set_session("userA", cookie="uid=1", role="user"); sm.set_session("userB", cookie="uid=2", role="user")
+    OWNER = "alice private record padded to a stable length 0123456789"
+    def g_bola(url, timeout=8, headers=None, allow_redirects=True):
+        if not (headers or {}).get("Cookie"): return _FakeResp("login", 401)
+        return _FakeResp(OWNER)                                     # anyone with a cookie reads owner's exact data
+    _patch_http(monkeypatch, g_bola)
+    assert "idor-bola" in [f["template"] for f in
+        _ult.ultron_agent.idor_check("http://t/vehicle/xyz/location", "userA", "userB")["data"]["findings"]]
+    def g_self(url, timeout=8, headers=None, allow_redirects=True):
+        ck = (headers or {}).get("Cookie", "")
+        if not ck: return _FakeResp("login here pad 0", 401)
+        who = "AAAA" if "uid=1" in ck else "BBBB"                  # each caller sees its own same-length record
+        return _FakeResp(f"self dashboard for {who} padded identical len 01234567")
+    _patch_http(monkeypatch, g_self)
+    r2 = _ult.ultron_agent.idor_check("http://t/me", "userA", "userB")
+    sm.clear()
+    assert not r2["data"]["findings"]                              # self-scoped FP killed
+
 def test_report_dedup_clustering():
     """Same class on N endpoints of one host collapses to ONE grouped finding (parity)."""
     from agents.ultron import report

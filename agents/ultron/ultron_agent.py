@@ -3504,15 +3504,24 @@ Report:"""
         sa, la, ba = fetch(url, ha)
         sn, ln, _ = fetch(url, {})
         anon_denied = not (sn == 200 and _close(ln, lo))
-        bola = sa == 200 and _close(la, lo) and anon_denied
+        # R5 — content-aware ownership (dogfood: crAPI vehicle-BOLA = TP vs VAmPI /me + crAPI /dashboard = FP).
+        # A length match alone FPs on SELF-SCOPED endpoints (/me, /dashboard) where each principal gets their
+        # OWN same-sized record. Discriminator: does the ATTACKER's body EQUAL the OWNER's?
+        #   identical  -> attacker literally received the OWNER's data = real BOLA (crAPI vehicle-location TP).
+        #   different (even if same length) -> each got their own record = self-scoped -> NOT BOLA, drop the FP.
+        _n = lambda s: " ".join((s or "").split())
+        same_data = bool(ba) and _n(ba) == _n(bo)
+        bola = sa == 200 and _close(la, lo) and anon_denied and same_data
+        self_scoped_fp = sa == 200 and _close(la, lo) and anon_denied and not same_data
         if bola:
             findings.append({
                 "template": "idor-bola", "severity": "high", "url": url, "cve": None, "validated": False,
-                "evidence": f"'{attacker}' got HTTP 200/{la}b at {url} (owner saw 200/{lo}b) while anon was "
-                            f"denied (HTTP {sn}) — the attacker reads the owner's resource = broken object-level "
-                            f"authorization. CONFIRM the data is {owner}'s, not {attacker}'s own.",
-                "repro": [f"As {owner}: GET {url} -> 200/{lo}b", f"As {attacker}: GET {url} -> 200/{la}b",
-                          f"As anon: GET {url} -> {sn}", "Confirm with two real accounts that the data is the owner's"],
+                "evidence": f"'{attacker}' got a response BYTE-IDENTICAL to '{owner}'s at {url} (both 200/{lo}b) "
+                            f"while anon was denied (HTTP {sn}) — the attacker received the owner's exact data, "
+                            f"not its own = broken object-level authorization (high confidence; content match, "
+                            f"not just length). Confirm the data belongs to {owner}.",
+                "repro": [f"As {owner}: GET {url} -> 200/{lo}b", f"As {attacker}: GET {url} -> 200/{la}b (identical body)",
+                          f"As anon: GET {url} -> {sn}", "Attacker's body == owner's body -> the attacker read the owner's object"],
             })
             # (2) id-swap enumeration — ONLY meaningful when ownership ISN'T enforced (BOLA held);
             #     otherwise the attacker swapping to THEIR OWN id legitimately returns 200 (= a false
@@ -3538,7 +3547,10 @@ Report:"""
         except Exception:
             pass
         msg = (f"IDOR/BOLA: {len(findings)} candidate(s) at {url}." if findings
-               else f"No cross-principal access at {url} — attacker didn't get the owner's resource (good auth).")
+               else (f"No BOLA at {url} — attacker got a same-length 200 but its content DIFFERS from the owner's "
+                     f"(self-scoped endpoint; each principal sees its own record) = not cross-principal access."
+                     if self_scoped_fp else
+                     f"No cross-principal access at {url} — attacker didn't get the owner's resource (good auth)."))
         return {"success": True, "message": msg, "data": {"findings": findings}}
 
     # fields whose auto-mutation would lock a user out / alter privilege or funds — refuse to
