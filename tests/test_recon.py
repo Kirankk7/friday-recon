@@ -205,6 +205,19 @@ def test_auth_matrix_bola(monkeypatch):
     sm.clear()
     assert "idor-bola" in [x["template"] for x in res["data"]["findings"]]
 
+def test_cors_misconfig(monkeypatch):
+    class _CR:
+        def __init__(s, h): s.text = ""; s.status_code = 200; s.headers = h
+    _patch_http(monkeypatch, lambda url, timeout=8, headers=None, allow_redirects=True: _CR(
+        {"Access-Control-Allow-Origin": (headers or {}).get("Origin", ""), "Access-Control-Allow-Credentials": "true"}))
+    f = _ult.ultron_agent.cors_check(["https://t.com/api"])["data"]["findings"]
+    assert f and f[0]["severity"] == "high"                                     # reflected + creds
+    _patch_http(monkeypatch, lambda url, timeout=8, headers=None, allow_redirects=True: _CR({"Access-Control-Allow-Origin": (headers or {}).get("Origin", "")}))
+    assert _ult.ultron_agent.cors_check(["https://t.com/x"])["data"]["findings"][0]["severity"] == "medium"  # reflected, no creds
+    _patch_http(monkeypatch, lambda url, timeout=8, headers=None, allow_redirects=True: _CR({"Access-Control-Allow-Origin": "https://t.com"}))
+    assert not _ult.ultron_agent.cors_check(["https://t.com/y"])["data"]["findings"]   # same-origin -> clean
+
+
 def test_subdomain_takeover():
     from core import takeover as TK
     r = TK.scan(["gh.t.com"], fetch=lambda u, timeout=8: (404, "There isn't a GitHub Pages site here."))

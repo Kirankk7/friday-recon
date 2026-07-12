@@ -3742,6 +3742,52 @@ Report:"""
         from core import jwt_analyzer
         return jwt_analyzer.analyze(token)
 
+    def cors_check(self, urls, max_urls: int = 40) -> dict:
+        """v1.3 A3 — CORS misconfiguration probe. Sends `Origin: <attacker>` to each URL and inspects
+        the reflected `Access-Control-Allow-Origin` (+ `-Credentials`). Reflected attacker-origin (or
+        `null`) WITH credentials = HIGH (cross-origin creds theft); reflected without creds = MEDIUM;
+        `*` + credentials = misconfig. Deterministic, one request/URL. Authorized targets only."""
+        if isinstance(urls, str):
+            urls = [u for u in re.split(r"[\s,]+", urls) if u]
+        evil = "https://evil-cors-probe.example"
+        out, seen = [], set()
+        for u in (urls or []):
+            u = (u or "").strip()
+            if not u or u in seen:
+                continue
+            seen.add(u)
+            if len(seen) > max_urls:
+                break
+            try:
+                r = _http_get(u, headers={"Origin": evil})
+                h = r.headers if hasattr(r, "headers") else {}
+                acao = (h.get("Access-Control-Allow-Origin", "") or "").strip()
+                acac = (h.get("Access-Control-Allow-Credentials", "") or "").strip().lower()
+            except Exception:
+                continue
+            reflected = (evil in acao) or (acao == "null")
+            if reflected and acac == "true":
+                sev, why = "high", (f"reflects the attacker Origin ({acao!r}) AND Access-Control-Allow-Credentials: true "
+                                    f"— any site can read this endpoint's authenticated response cross-origin (creds theft)")
+            elif reflected:
+                sev, why = "medium", (f"reflects the attacker Origin ({acao!r}) without credentials — cross-origin reads "
+                                      f"of any non-cookie-gated data; escalate if it returns sensitive data")
+            elif acao == "*" and acac == "true":
+                sev, why = "medium", "wildcard Access-Control-Allow-Origin '*' WITH credentials — an invalid, unsafe combination"
+            else:
+                continue
+            out.append({
+                "template": "cors-misconfig", "severity": sev, "url": u, "cve": None, "validated": True,
+                "evidence": f"Sent 'Origin: {evil}' to {u}; the response {why}.",
+                "repro": [f"curl -sk -I -H 'Origin: {evil}' '{u}'",
+                          f"Observe Access-Control-Allow-Origin: {acao}" + (f" + Access-Control-Allow-Credentials: {acac}" if acac else ""),
+                          "From an attacker page, fetch(url,{credentials:'include'}) and read the response"],
+            })
+        tt = ", ".join(f["url"] for f in out) or "none"
+        return {"success": True,
+                "message": f"CORS: {len(out)} misconfig(s) across {len(seen)} URL(s) — {tt}.",
+                "data": {"findings": out}}
+
     def graphql_hunt(self, url: str, as_user: str = "") -> dict:
         """Hunt a GraphQL endpoint (Tier-2): introspection (schema exposure = info disclosure),
         operation inventory, flag privileged-looking mutations, and (if a session is set) check

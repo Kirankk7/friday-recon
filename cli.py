@@ -134,6 +134,7 @@ def main() -> int:
     add("graphql", "Hunt a GraphQL endpoint (introspection + privileged-mutation inventory)", "url")
     add("jwt", "Analyze a JWT — alg:none/weak-HS/jku-SSRF/kid/exp/claims (deterministic, no cracking)", "token")
     add("takeover", "Subdomain-takeover check (dangling-service fingerprints; host, comma-list, or @file)", "hosts")
+    add("cors", "CORS misconfig probe (Origin reflection + credentials) over a target + its crawled URLs", "target")
     sp_se = add("session-set", "Register a principal for authz testing (cookie)", "name", "cookie")
     sub.add_parser("sessions", help="List authz-test sessions")
     sp_id = add("idor", "IDOR/BOLA check: owner vs attacker (anon control)", "url")
@@ -204,6 +205,19 @@ def main() -> int:
         import os as _os
         hosts = open(a.hosts[1:], encoding="utf-8").read() if a.hosts.startswith("@") and _os.path.exists(a.hosts[1:]) else a.hosts
         r = U.subdomain_takeover(hosts)
+        print(r.get("message", ""))
+        for f in r.get("data", {}).get("findings", []):
+            print(f"  [{f['severity'].upper()}] {f['url']}: {f['evidence'][:130]}")
+        return 0 if r.get("success") else 1
+    if c == "cors":
+        from agents.ultron.ultron_agent import ultron_agent as U
+        base = a.target if a.target.startswith("http") else "https://" + a.target
+        urls = [base]
+        try:
+            urls += U.crawl_site(a.target).get("data", {}).get("urls", [])
+        except Exception:
+            pass
+        r = U.cors_check(urls)
         print(r.get("message", ""))
         for f in r.get("data", {}).get("findings", []):
             print(f"  [{f['severity'].upper()}] {f['url']}: {f['evidence'][:130]}")
