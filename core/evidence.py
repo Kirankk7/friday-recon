@@ -31,6 +31,7 @@ _CWE = [
     ("csrf",           ("CWE-352", "Cross-Site Request Forgery")),
     ("xxe",            ("CWE-611", "XML External Entity Reference")),
     ("graphql",        ("CWE-863", "Incorrect Authorization")),
+    ("bfla",           ("CWE-862", "Missing Authorization")),   # before "auth": bfla-* contains "auth"
     ("auth",           ("CWE-287", "Improper Authentication")),
 ]
 
@@ -44,6 +45,7 @@ _CVSS = [
     ("ssrf",          ("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:L/A:N", 8.6, "High")),
     ("lfi",           ("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N", 7.5, "High")),
     ("path",          ("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N", 7.5, "High")),
+    ("bfla",          ("CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:L/A:N", 8.1, "High")),
     ("idor",          ("CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N", 6.5, "Medium")),
     ("bola",          ("CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N", 6.5, "Medium")),
     ("xss",           ("CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N", 6.1, "Medium")),
@@ -59,6 +61,7 @@ _IMPACT = {
     "xss": "Attacker-controlled script runs in a victim's session — session theft, credential capture, or action-on-behalf.",
     "idor": "One user can read (or act on) another user's objects — broken object-level authorization.",
     "bola": "One user can read (or act on) another user's objects — broken object-level authorization.",
+    "bfla": "A lower-privileged principal reaches a higher-privileged function — broken function-level authorization (e.g. a normal user, or an unauthenticated attacker, invokes admin-only endpoints).",
     "ssrf": "The server can be coerced into making requests to internal services or cloud metadata endpoints.",
     "lfi": "Arbitrary local files can be read from the server.",
     "rce": "Arbitrary commands run on the server — full host compromise.",
@@ -69,6 +72,7 @@ _REMEDIATION = {
     "xss": "Context-aware output encoding + a strict Content-Security-Policy; never reflect raw input.",
     "idor": "Enforce object-level authorization server-side on every request — verify the caller owns the object.",
     "bola": "Enforce object-level authorization server-side on every request — verify the caller owns the object.",
+    "bfla": "Enforce function-level authorization server-side on every endpoint — check the caller's role/privilege before executing, deny by default.",
     "ssrf": "Allowlist outbound hosts; block internal ranges + 169.254.169.254; resolve+validate the final URL.",
     "lfi": "Canonicalize and validate paths against an allowlist; never pass user input to file APIs.",
 }

@@ -457,6 +457,35 @@ def _resp_excerpt(status, body: str, limit: int = 1200) -> str:
     return f"HTTP {status} ({len(b)}b)\n" + b[:limit]
 
 
+# ── Auth Matrix (v1.3 slice 1) — heuristic expected-access + table renderer ──
+def _expected_access(path: str):
+    """Heuristic: what role SHOULD reach this path? (role, confidence, reason). NOT a rules engine —
+    every expectation is tagged with confidence so an unexpected 2xx is a "possible auth issue" (medium),
+    not a hard claim, unless a guest reaches an admin path (high). Deterministic, no LLM."""
+    p = (path or "").lower()
+    if re.search(r"/(admin|internal|manage|backoffice|superuser|console|sysadmin)(/|$|\?)", p):
+        return ("admin", "high", "admin/management path segment")
+    if re.search(r"/(me|profile|account|settings|my|dashboard)(/|$|\?)", p):
+        return ("self", "medium", "self-scoped path segment")
+    if re.search(r"/(public|health|status|login|register|signup|logout|docs|openapi|swagger|sitemap|robots|\.well-known)", p):
+        return ("guest", "high", "public path segment")
+    if re.search(r"/\d+(/|$|\?)|/[0-9a-f]{8,}-?[0-9a-f]{0,}", p):     # numeric or uuid-ish id
+        return ("owner", "medium", "id-bearing path (object)")
+    return ("user", "low", "default: assume authentication required")
+
+
+def _auth_matrix_table(rows: list, principals: list) -> str:
+    """Render the endpoint × principal status table as cp1252-safe markdown (ASCII marks, no emoji)."""
+    head = ["Endpoint", "Expected"] + list(principals) + ["Result"]
+    out = ["| " + " | ".join(head) + " |", "|" + "|".join(["---"] * len(head)) + "|"]
+    for r in rows:
+        cells = [str(r["cells"].get(p, "-")) for p in principals]
+        result = r.get("result", "ok")
+        ep = r["path"] or r["url"]
+        out.append("| " + " | ".join([f"`{ep[:48]}`", r["expected"]] + cells + [result]) + " |")
+    return "\n".join(out)
+
+
 def _xss_reflection_ctx(body: str, marker: str) -> str:
     """Best (most-exploitable) context across ALL reflections of the marker. A value often
     echoes in several places (e.g. a JS var AND a visible `<b>...</b>`); the finding's confidence
@@ -3607,6 +3636,83 @@ Report:"""
                f"No write-BOLA at {url} — attacker's write to '{field}' didn't land on the owner's object "
                f"(HTTP {wcode}, good auth).")
         return {"success": True, "message": msg, "data": {"findings": findings, "reverted": reverted}}
+
+    def auth_matrix(self, endpoints: list, owner: str = "", attacker: str = "",
+                    write: bool = False) -> dict:
+        """v1.3 keystone — model authorization across endpoints × principals.
+
+        For each endpoint, fetch it as anon + every registered session and record the status.
+        Two anomaly axes, both delegating to EXISTING oracles (no new BOLA logic):
+          - BFLA (function-level): a lower-priv principal gets 2xx on an admin-expected path.
+          - BOLA (object-level): id-bearing/self paths -> idor_check (read) + opt-in write_bola_check.
+        Opt-in / standalone: needs >=2 principals via `session-set`; with none it degrades to guest-only
+        (still catches unauth-reachable admin routes). Deterministic, read-only by default. The table IS
+        the deliverable. Authorized targets only."""
+        from core import session_manager as sm
+        from urllib.parse import urlsplit
+        sessions = sm.list_sessions() or {}
+        principals = ["anon"] + list(sessions.keys())
+        rows, findings, seen = [], [], set()
+        for url in (endpoints or []):
+            if not url or url in seen:
+                continue
+            seen.add(url)
+            path = urlsplit(url).path or "/"
+            role, conf, reason = _expected_access(path)
+            cells = {}
+            for pr in principals:
+                hdrs = {} if pr == "anon" else (sm.headers_for(pr) or {})
+                try:
+                    r = _http_get(url, headers=hdrs)      # _http_get already rate-gates
+                    cells[pr] = r.status_code
+                except Exception:
+                    cells[pr] = None
+            result = "ok"
+            # ── BFLA: an admin-expected path reached (2xx) by a non-admin principal ──
+            if role == "admin":
+                for pr in principals:
+                    pr_role = "guest" if pr == "anon" else (sessions.get(pr, {}).get("role") or "user")
+                    code = cells.get(pr)
+                    if pr_role != "admin" and code and 200 <= code < 300:
+                        hi = (pr == "anon")     # guest reaching admin = High; a named user = Medium
+                        findings.append({
+                            "template": "bfla-broken-function-auth", "severity": "high",
+                            "url": url, "cve": None, "validated": False,
+                            "evidence": (f"'{pr}' ({pr_role}) got HTTP {code} on an admin-expected path "
+                                         f"{path} ({reason}) — broken function-level authorization. "
+                                         f"Confidence: {'HIGH (an unauthenticated/guest principal reached it)' if hi else 'MEDIUM (a named non-admin user reached it — confirm the role)'}."),
+                            "request": _raw_http(url, {} if pr == "anon" else (sm.headers_for(pr) or {})),
+                            "repro": [f"As {pr} ({pr_role}): GET {url} -> HTTP {code}",
+                                      f"Expected role for this path: admin ({reason})",
+                                      "A lower-priv principal must NOT reach an admin function"],
+                        })
+                        result = "BFLA"
+                        break
+            # ── BOLA: id-bearing / self path -> delegate to the existing ownership oracles ──
+            if role in ("owner", "self") and owner and attacker and owner in sessions and attacker in sessions:
+                try:
+                    bo = self.idor_check(url, owner, attacker)
+                    got = bo.get("data", {}).get("findings", [])
+                    if got:
+                        findings += got
+                        result = "BOLA" if result == "ok" else result + "+BOLA"
+                    if write:
+                        wb = self.write_bola_check(url, owner=owner, attacker=attacker)
+                        gotw = wb.get("data", {}).get("findings", [])
+                        if gotw:
+                            findings += gotw
+                            result = "BOLA-write" if result == "ok" else result + "+write"
+                except Exception:
+                    pass
+            rows.append({"url": url, "path": path, "expected": role, "conf": conf,
+                         "reason": reason, "cells": dict(cells), "result": result})
+        table_md = _auth_matrix_table(rows, principals)
+        anomalies = [f for f in findings if f.get("template", "").startswith(("bfla", "idor"))]
+        return {"success": True,
+                "message": (f"Auth matrix: {len(rows)} endpoint(s) x {len(principals)} principal(s) "
+                            f"({', '.join(principals)}) -> {len(anomalies)} authz finding(s)."),
+                "data": {"matrix": rows, "findings": findings, "principals": principals,
+                         "table_md": table_md}}
 
     def graphql_hunt(self, url: str, as_user: str = "") -> dict:
         """Hunt a GraphQL endpoint (Tier-2): introspection (schema exposure = info disclosure),

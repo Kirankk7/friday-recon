@@ -141,6 +141,10 @@ def main() -> int:
     sp_wb.add_argument("--field", default="email"); sp_wb.add_argument("--owner", default="userA")
     sp_wb.add_argument("--attacker", default="userB"); sp_wb.add_argument("--method", default="PUT")
     sp_wb.add_argument("--verify-url", default="", dest="verify_url")
+    # Auth Matrix (v1.3) — endpoint x principal (BFLA + BOLA). Opt-in; set principals via session-set.
+    sp_am = add("auth-matrix", "Auth Matrix: endpoint x principal -> BFLA + BOLA (set sessions first)", "target")
+    sp_am.add_argument("--owner", default=""); sp_am.add_argument("--attacker", default="")
+    sp_am.add_argument("--write", action="store_true", help="also opt-in write-BOLA (verify+revert, benign fields)")
     sub.add_parser("targets", help="List profiled targets")
     sub.add_parser("scope", help="Show the current in/out-of-scope rules (data/scope.json)")
     sub.add_parser("defensive", help="Blue-team host scan (new ports / suspicious procs)")
@@ -190,6 +194,24 @@ def main() -> int:
     if c == "sessions":    return _run("session_list")
     if c == "idor":        return _run("idor_check", url=a.url, owner=a.owner, attacker=a.attacker)
     if c == "write-bola":  return _run("write_bola_check", url=a.url, field=a.field, owner=a.owner, attacker=a.attacker, method=a.method, verify_url=a.verify_url)
+    if c == "auth-matrix":
+        from agents.ultron.ultron_agent import ultron_agent as U
+        from core import target_profiles as tp
+        host = a.target.split("//")[-1].split("/")[0]
+        eps = list(tp._load().get(tp._norm(host), {}).get("endpoints", []))      # burp/recon/prior-crawl inventory
+        base = a.target if a.target.startswith("http") else "http://" + a.target
+        try:
+            eps += U.crawl_site(a.target).get("data", {}).get("urls", [])          # + live parameterized surface
+        except Exception:
+            pass
+        if base not in eps:
+            eps.append(base)
+        r = U.auth_matrix(eps, owner=a.owner, attacker=a.attacker, write=a.write)
+        print(r.get("message", ""), "\n")
+        print(r["data"]["table_md"])
+        for f in r["data"].get("findings", []):
+            print(f"  [{f['template']}] {f['url']}")
+        return 0 if r.get("success") else 1
     if c == "targets":     return _run("list_targets")
     if c == "scope":       return _run("scope_status")
     if c == "defensive":   return _run("defensive_scan")

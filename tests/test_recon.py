@@ -171,6 +171,40 @@ def test_evidence_preconditions():
     x = evidence.build({"template": "xss-reflected", "severity": "medium", "url": "http://t/x?q=1"}, "t")
     assert "victim interaction" in x["preconditions"]["summary"].lower()
 
+
+# ── Auth Matrix (v1.3 keystone) ──────────────────────────────────────────────────
+def test_auth_expected_access():
+    ea = _ult._expected_access
+    assert ea("/admin/users")[0] == "admin" and ea("/admin/x")[1] == "high"
+    assert ea("/orders/42")[0] == "owner"
+    assert ea("/login")[0] == "guest"
+    assert ea("/profile")[0] == "self"
+    assert ea("/foo")[0] == "user"
+
+def test_auth_matrix_bfla(monkeypatch):
+    # anon reaching an admin-expected path = BFLA (broken function-level authz), HIGH confidence.
+    from core import session_manager as sm
+    sm.clear()
+    _patch_http(monkeypatch, lambda url, timeout=8, headers=None, allow_redirects=True: _FakeResp("panel", 200))
+    res = _ult.ultron_agent.auth_matrix(["http://t/admin/users", "http://t/products"])
+    bfla = [x for x in res["data"]["findings"] if x["template"] == "bfla-broken-function-auth"]
+    assert bfla and "/admin/users" in bfla[0]["url"] and "HIGH" in bfla[0]["evidence"]
+    assert not any("/products" in x["url"] for x in bfla)
+    assert "Expected" in res["data"]["table_md"]
+
+def test_auth_matrix_bola(monkeypatch):
+    # id-bearing path with 2 principals -> delegates to idor_check (no new BOLA logic).
+    from core import session_manager as sm
+    sm.clear(); sm.set_session("userA", cookie="u=1", role="user"); sm.set_session("userB", cookie="u=2", role="user")
+    def _get(url, timeout=8, headers=None, allow_redirects=True):
+        if not (headers or {}).get("Cookie"):
+            return _FakeResp("forbidden", 403)
+        return _FakeResp("owner's order record " * 6, 200)
+    _patch_http(monkeypatch, _get)
+    res = _ult.ultron_agent.auth_matrix(["http://t/orders/1"], owner="userA", attacker="userB")
+    sm.clear()
+    assert "idor-bola" in [x["template"] for x in res["data"]["findings"]]
+
 def test_report_dedup_clustering():
     """Same class on N endpoints of one host collapses to ONE grouped finding (parity)."""
     from agents.ultron import report
