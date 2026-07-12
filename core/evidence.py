@@ -31,6 +31,7 @@ _CWE = [
     ("csrf",           ("CWE-352", "Cross-Site Request Forgery")),
     ("xxe",            ("CWE-611", "XML External Entity Reference")),
     ("graphql",        ("CWE-863", "Incorrect Authorization")),
+    ("takeover",       ("CWE-284", "Improper Access Control (dangling DNS / subdomain takeover)")),
     ("jwt",            ("CWE-347", "Improper Verification of Cryptographic Signature")),
     ("bfla",           ("CWE-862", "Missing Authorization")),   # before "auth": bfla-* contains "auth"
     ("auth",           ("CWE-287", "Improper Authentication")),
@@ -46,6 +47,7 @@ _CVSS = [
     ("ssrf",          ("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:L/A:N", 8.6, "High")),
     ("lfi",           ("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N", 7.5, "High")),
     ("path",          ("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N", 7.5, "High")),
+    ("takeover",      ("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:L/I:H/A:N", 8.2, "High")),
     ("jwt",           ("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N", 8.1, "High")),
     ("bfla",          ("CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:L/A:N", 8.1, "High")),
     ("idor",          ("CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N", 6.5, "Medium")),
@@ -65,6 +67,7 @@ _IMPACT = {
     "bola": "One user can read (or act on) another user's objects — broken object-level authorization.",
     "bfla": "A lower-privileged principal reaches a higher-privileged function — broken function-level authorization (e.g. a normal user, or an unauthenticated attacker, invokes admin-only endpoints).",
     "jwt": "Weak JWT handling lets an attacker forge or tamper tokens (alg:none, key-confusion, attacker-controlled key source, or no expiry) — authentication bypass or privilege escalation.",
+    "takeover": "The subdomain points at a de-provisioned third-party service an attacker can re-register — letting them serve content on your domain (phishing, cookie/token theft on the parent domain, OAuth-redirect abuse).",
     "ssrf": "The server can be coerced into making requests to internal services or cloud metadata endpoints.",
     "lfi": "Arbitrary local files can be read from the server.",
     "rce": "Arbitrary commands run on the server — full host compromise.",
@@ -77,6 +80,7 @@ _REMEDIATION = {
     "bola": "Enforce object-level authorization server-side on every request — verify the caller owns the object.",
     "bfla": "Enforce function-level authorization server-side on every endpoint — check the caller's role/privilege before executing, deny by default.",
     "jwt": "Pin a strong asymmetric algorithm server-side (reject 'none' and unexpected algs); use a strong secret / rotate keys; ignore attacker-controllable jku/x5u/kid; always verify exp.",
+    "takeover": "Remove the dangling DNS record, or re-claim the third-party resource. Audit all CNAMEs pointing at external services and de-provision DNS before the service.",
     "ssrf": "Allowlist outbound hosts; block internal ranges + 169.254.169.254; resolve+validate the final URL.",
     "lfi": "Canonicalize and validate paths against an allowlist; never pass user input to file APIs.",
 }

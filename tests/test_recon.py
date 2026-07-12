@@ -205,6 +205,15 @@ def test_auth_matrix_bola(monkeypatch):
     sm.clear()
     assert "idor-bola" in [x["template"] for x in res["data"]["findings"]]
 
+def test_subdomain_takeover():
+    from core import takeover as TK
+    r = TK.scan(["gh.t.com"], fetch=lambda u, timeout=8: (404, "There isn't a GitHub Pages site here."))
+    assert any(f["template"] == "subdomain-takeover" for f in r["data"]["findings"])
+    assert "GitHub Pages" in r["data"]["findings"][0]["evidence"]
+    assert TK.scan(["s3.t.com"], fetch=lambda u, timeout=8: (404, "<Code>NoSuchBucket</Code>"))["data"]["findings"]
+    assert not TK.scan(["ok.t.com"], fetch=lambda u, timeout=8: (200, "welcome 404 not found"))["data"]["findings"]
+
+
 def test_jwt_analyzer():
     import base64, json
     from core import jwt_analyzer as J
