@@ -205,6 +205,16 @@ def test_auth_matrix_bola(monkeypatch):
     sm.clear()
     assert "idor-bola" in [x["template"] for x in res["data"]["findings"]]
 
+def test_auth_matrix_r6(monkeypatch):
+    # R6: anon 2xx on owner/self path = missing-authentication; default 'user' path must NOT trigger.
+    from core import session_manager as sm
+    sm.clear()
+    _patch_http(monkeypatch, lambda url, timeout=8, headers=None, allow_redirects=True: _FakeResp("record", 200))
+    r = _ult.ultron_agent.auth_matrix(["http://t/orders/1"])            # owner (id) -> flag
+    assert "missing-authentication" in [f["template"] for f in r["data"]["findings"]]
+    r2 = _ult.ultron_agent.auth_matrix(["http://t/products"])           # default 'user' -> no flag
+    assert not any(f["template"] == "missing-authentication" for f in r2["data"]["findings"])
+
 def test_oast_ssrf(monkeypatch):
     import urllib.request, urllib.parse
     def g_vuln(url, timeout=8, headers=None, allow_redirects=True):

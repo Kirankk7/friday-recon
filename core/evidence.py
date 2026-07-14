@@ -37,6 +37,7 @@ _CWE = [
     ("takeover",       ("CWE-284", "Improper Access Control (dangling DNS / subdomain takeover)")),
     ("jwt",            ("CWE-347", "Improper Verification of Cryptographic Signature")),
     ("bfla",           ("CWE-862", "Missing Authorization")),   # before "auth": bfla-* contains "auth"
+    ("missing-authentication", ("CWE-306", "Missing Authentication for Critical Function")),  # before "auth"
     ("auth",           ("CWE-287", "Improper Authentication")),
 ]
 
@@ -56,6 +57,7 @@ _CVSS = [
     ("takeover",      ("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:L/I:H/A:N", 8.2, "High")),
     ("jwt",           ("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N", 8.1, "High")),
     ("bfla",          ("CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:L/A:N", 8.1, "High")),
+    ("missing-authentication", ("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:L/A:N", 8.2, "High")),
     ("idor",          ("CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N", 6.5, "Medium")),
     ("bola",          ("CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N", 6.5, "Medium")),
     ("xss",           ("CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N", 6.1, "Medium")),

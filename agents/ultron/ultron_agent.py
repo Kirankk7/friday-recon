@@ -3725,6 +3725,24 @@ Report:"""
                             result = "BOLA-write" if result == "ok" else result + "+write"
                 except Exception:
                     pass
+            # ── R6: anon 2xx on a self/owner-expected path = broken/missing authentication (CWE-306) ──
+            #    (admin paths are covered by BFLA above; the low-confidence "user" default is skipped to
+            #    avoid flagging genuinely-public pages — precision over recall.)
+            if role in ("self", "owner"):
+                ac = cells.get("anon")
+                if ac and 200 <= ac < 300:
+                    findings.append({
+                        "template": "missing-authentication", "severity": "high", "url": url,
+                        "cve": None, "validated": False,
+                        "evidence": (f"Unauthenticated (anon) got HTTP {ac} on {path} — an endpoint whose expected "
+                                     f"access is '{role}' ({reason}) is reachable with NO authentication = broken/"
+                                     f"missing authentication."),
+                        "request": _raw_http(url, {}),
+                        "repro": [f"As anon (no session): GET {url} -> HTTP {ac}",
+                                  f"Expected access for this path: {role} ({reason})",
+                                  "An auth-scoped resource must not be reachable unauthenticated"],
+                    })
+                    result = "no-auth" if result == "ok" else result + "+no-auth"
             rows.append({"url": url, "path": path, "expected": role, "conf": conf,
                          "reason": reason, "cells": dict(cells), "result": result})
         table_md = _auth_matrix_table(rows, principals)
