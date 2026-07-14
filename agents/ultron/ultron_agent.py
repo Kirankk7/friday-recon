@@ -417,7 +417,12 @@ _PARAM_HINTS = {
             "dir", "load", "download", "read", "filename", "pg"),
 }
 _LFI_PROBE = "../" * 10 + "etc/passwd"   # deep traversal — app nesting/mount depth is unknown
-_LFI_SIGN = re.compile(r"root:.?:0:0:|\[boot loader\]|\[fonts\]")        # /etc/passwd or win.ini
+_LFI_PROBES = (_LFI_PROBE, "../" * 10 + "proc/self/environ")   # /etc/passwd + Linux process env leak
+_LFI_SIGN = re.compile(
+    r"root:.?:0:0:|\[boot loader\]|\[fonts\]|"                 # /etc/passwd, win.ini
+    r"(?:HOME|PATH|USER|PWD|SHELL)=/[^\s;]{2,}|"               # /proc/self/environ (env-var leak)
+    r"-----BEGIN (?:RSA |OPENSSH |EC )?PRIVATE KEY-----",      # a leaked private key file
+    re.IGNORECASE)
 _REDIR_MARKER = "jvz9redir.example"
 
 
@@ -1995,19 +2000,26 @@ Report:"""
                             pass
                     if any(h in kl for h in _PARAM_HINTS["lfi"]):
                         try:
-                            q = qs.copy(); q[i] = (k, _LFI_PROBE)
-                            purl = urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(q, safe="/."), ""))
-                            time.sleep(0.1)
-                            r = _http_get(purl, headers=_hdrs)
-                            if _LFI_SIGN.search(r.text or ""):
-                                out.append({
-                                    "template": "lfi-path-traversal", "severity": "high",
-                                    "url": purl, "cve": None, "validated": True,
-                                    "evidence": f"Param '{k}' is path-traversable — /etc/passwd (or win.ini) signature "
-                                                f"in the response.",
-                                    "repro": [f"Send: GET {purl}",
-                                              "Observe the file contents (root:x:0:0 / [boot loader]) in the response"],
-                                })
+                            _lfi_hit = False
+                            for _probe in _LFI_PROBES:
+                                q = qs.copy(); q[i] = (k, _probe)
+                                purl = urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(q, safe="/."), ""))
+                                time.sleep(0.1)
+                                r = _http_get(purl, headers=_hdrs)
+                                if _LFI_SIGN.search(r.text or ""):
+                                    _fname = _probe.split("/")[-1]
+                                    out.append({
+                                        "template": "lfi-path-traversal", "severity": "high",
+                                        "url": purl, "cve": None, "validated": True,
+                                        "evidence": f"Param '{k}' is path-traversable — a sensitive-file signature "
+                                                    f"({_fname}: /etc/passwd · /proc/self/environ · win.ini · private-key) "
+                                                    f"appeared in the response.",
+                                        "repro": [f"Send: GET {purl}",
+                                                  f"Observe the {_fname} contents (e.g. root:x:0:0 / PATH= / private-key) in the response"],
+                                    })
+                                    _lfi_hit = True
+                                    break
+                            if _lfi_hit:
                                 continue
                         except Exception:
                             pass

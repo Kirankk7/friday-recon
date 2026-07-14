@@ -605,6 +605,16 @@ def test_xss_confirm_exec():
     assert any(f["template"] == "xss-confirmed" for f in r["data"]["findings"])
 
 
+def test_probe_lfi_environ(monkeypatch):
+    def g(url, timeout=8, headers=None, allow_redirects=True):
+        if "environ" in url: return _FakeResp("USER=root\nPATH=/usr/local/bin\nHOME=/root\n")
+        if "passwd" in url:  return _FakeResp("not found", 404)
+        return _FakeResp("normal page " * 40)
+    _patch_http(monkeypatch, g)
+    res = _ult.ultron_agent._probe_injection(["http://t.com/dl?file=readme"])
+    assert any(f["template"] == "lfi-path-traversal" for f in res)
+
+
 def test_probe_nosqli_operator(monkeypatch):
     # NoSQL operator-injection ([$ne]) auth-bypass: plain param denied, [$ne] returns 200-with-data.
     def g_bypass(url, timeout=8, headers=None, allow_redirects=True):
