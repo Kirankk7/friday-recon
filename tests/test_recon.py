@@ -584,6 +584,27 @@ def test_probe_sqli_anomaly(monkeypatch):
     assert not [r for r in res if r["template"] == "sqli-error-based"]  # must NOT over-claim SQLi
 
 
+def test_xss_confirm_exec():
+    # live headless XSS EXECUTION confirm vs a raw-reflecting server; skip if no browser.
+    import threading, http.server, urllib.parse, pytest
+    class _H(http.server.BaseHTTPRequestHandler):
+        def do_GET(s):
+            v = urllib.parse.parse_qs(urllib.parse.urlsplit(s.path).query).get("q", [""])[0]
+            s.send_response(200); s.send_header("Content-Type", "text/html"); s.end_headers()
+            s.wfile.write(f"<html><body><div>{v}</div></body></html>".encode())
+        def log_message(s, *a): pass
+    srv = http.server.HTTPServer(("127.0.0.1", 0), _H)
+    port = srv.server_address[1]
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        r = _ult.ultron_agent.xss_confirm(f"http://127.0.0.1:{port}/s?q=x", param="q", timeout=10)
+    finally:
+        srv.shutdown()
+    if not r.get("success"):
+        pytest.skip("Playwright/browser unavailable")
+    assert any(f["template"] == "xss-confirmed" for f in r["data"]["findings"])
+
+
 def test_probe_nosqli_operator(monkeypatch):
     # NoSQL operator-injection ([$ne]) auth-bypass: plain param denied, [$ne] returns 200-with-data.
     def g_bypass(url, timeout=8, headers=None, allow_redirects=True):

