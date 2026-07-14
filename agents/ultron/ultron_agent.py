@@ -1869,6 +1869,42 @@ Report:"""
                                 })
                     except Exception:
                         pass
+                    # --- NoSQL operator-injection ([$ne]/[$gt]) — the auth-bypass / data-exfil case
+                    #     that returns 200-with-DIFFERENT-data (not an error). e.g. ?user=admin ->
+                    #     ?user[$ne]=x makes the query match everything. Deterministic response-diff. ---
+                    try:
+                        from urllib.parse import quote as _q
+                        others = [f"{_q(kk)}={_q(vv)}" for kk, vv in qs if kk != k]
+                        op_qs = "&".join(others + [f"{_q(k)}[$ne]={_q(v or 'x')}"])
+                        opurl = urlunsplit((parts.scheme, parts.netloc, parts.path, op_qs, ""))
+                        time.sleep(0.1)
+                        r_op = _http_get(opurl, headers=_hdrs)
+                        b_op = r_op.text or ""
+                        no_err = not _NOSQL_ERROR_SIGNS.search(b_op) and not _SQL_ERROR_SIGNS.search(b_op)
+                        if base_status in (401, 403) and r_op.status_code == 200 and len(b_op) > 0 and no_err:
+                            out.append({
+                                "template": "nosqli-operator", "severity": "high", "url": opurl, "cve": None,
+                                "validated": False,
+                                "evidence": (f"NoSQL operator-injection AUTH BYPASS candidate: baseline was denied "
+                                             f"(HTTP {base_status}) but '{k}[$ne]=' returned HTTP 200/{len(b_op)}b — the "
+                                             f"$ne operator makes the query match a non-equal record, bypassing the check. "
+                                             f"Confirm the returned data isn't yours."),
+                                "repro": [f"Baseline: GET {u}  -> HTTP {base_status}", f"Inject:   GET {opurl}",
+                                          "Observe the 200 (auth/filter bypassed via the $ne operator)"],
+                            })
+                        elif (base_status == 200 and r_op.status_code == 200 and no_err
+                              and len(b_op) > max(120, int((base_len or 0) * 1.5))):
+                            out.append({
+                                "template": "nosqli-operator", "severity": "medium", "url": opurl, "cve": None,
+                                "validated": False,
+                                "evidence": (f"NoSQL operator-injection candidate: '{k}[$ne]=' returned a much larger "
+                                             f"200 ({len(b_op)}b vs baseline {base_len}b, no DB error) — the $ne operator "
+                                             f"likely matched extra records (data over-exposure). Confirm manually."),
+                                "repro": [f"Baseline: GET {u}  -> 200/{base_len}b", f"Inject:   GET {opurl} -> 200/{len(b_op)}b",
+                                          "Compare the record sets; a larger set = the operator matched more than intended"],
+                            })
+                    except Exception:
+                        pass
                     # --- param-name-routed tests (dork-derived): fire only the test the
                     #     param name suggests, so redirect/file params get the right probe ---
                     kl = k.lower()

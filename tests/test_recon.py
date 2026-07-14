@@ -584,6 +584,21 @@ def test_probe_sqli_anomaly(monkeypatch):
     assert not [r for r in res if r["template"] == "sqli-error-based"]  # must NOT over-claim SQLi
 
 
+def test_probe_nosqli_operator(monkeypatch):
+    # NoSQL operator-injection ([$ne]) auth-bypass: plain param denied, [$ne] returns 200-with-data.
+    def g_bypass(url, timeout=8, headers=None, allow_redirects=True):
+        if "[$ne]" in url or "%5B" in url:
+            return _FakeResp('[{"user":"admin"},{"user":"bob"}]', 200)
+        return _FakeResp("Unauthorized", 401)
+    _patch_http(monkeypatch, g_bypass)
+    res = _ult.ultron_agent._probe_injection(["http://t.com/api/users?user=me"])
+    assert any(f["template"] == "nosqli-operator" for f in res)
+    _patch_http(monkeypatch, lambda url, timeout=8, headers=None, allow_redirects=True:
+                _FakeResp("stable record body padded to a fixed length 0123456789 " * 6, 200))
+    assert not any(f["template"] == "nosqli-operator" for f in
+                   _ult.ultron_agent._probe_injection(["http://t.com/api/x?user=me"]))
+
+
 def test_probe_type_error_dropped(monkeypatch):
     # FP-kill (DSVW `?size=` dogfood): a quote -> 500 via numeric-cast error (int("32'") ->
     # ValueError) is input-validation, NOT injection — must be DROPPED, not flagged as anomaly.
