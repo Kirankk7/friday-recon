@@ -215,6 +215,32 @@ def test_auth_matrix_r6(monkeypatch):
     r2 = _ult.ultron_agent.auth_matrix(["http://t/products"])           # default 'user' -> no flag
     assert not any(f["template"] == "missing-authentication" for f in r2["data"]["findings"])
 
+def test_oast_cmdi_xxe(monkeypatch):
+    import urllib.request, urllib.parse, re
+    class _R:
+        def __init__(s): s.text = ""; s.status_code = 200; s.headers = {}
+    def g_cmdi(url, timeout=8, headers=None, allow_redirects=True):
+        v = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(url).query)).get("cmd", "")
+        m = re.search(r"(?:curl -s|wget -q -O-) (http://\S+)", v)
+        if m:
+            try: urllib.request.urlopen(m.group(1).rstrip(";)`&|"), timeout=2).read()
+            except Exception: pass
+        return _R()
+    _patch_http(monkeypatch, g_cmdi)
+    rc = _ult.ultron_agent.oast_probe("http://t/ping?cmd=1", param="cmd", kind="cmdi", wait=3.0)
+    assert any(f["template"] == "cmdi-oob-confirmed" for f in rc["data"]["findings"])
+    def w(method, url, json_body=None, timeout=8, headers=None, data=None):
+        if data:
+            m = re.search(r'SYSTEM "(http://\S+?)"', data)
+            if m:
+                try: urllib.request.urlopen(m.group(1), timeout=2).read()
+                except Exception: pass
+        return _R()
+    monkeypatch.setattr(_ult, "_http_write", w)
+    rx = _ult.ultron_agent.oast_probe("http://t/parse", kind="xxe", wait=3.0)
+    assert any(f["template"] == "xxe-oob-confirmed" for f in rx["data"]["findings"])
+
+
 def test_oast_ssrf(monkeypatch):
     import urllib.request, urllib.parse
     def g_vuln(url, timeout=8, headers=None, allow_redirects=True):
