@@ -3703,6 +3703,28 @@ Report:"""
         return {"success": True, "message": f"Route inventory: {inv.summary()}",
                 "data": {"urls": inv.urls(), "id_bearing": inv.id_bearing(), "summary": inv.summary()}}
 
+    def hunt_mode(self, har: str) -> dict:
+        """Hunt Mode — OFFLINE analysis of a browser HAR into ranked BOLA/IDOR candidates. FRIDAY's compliant
+        play for programs that forbid automated scanning + sit behind bot-protection: the hunter's own browser
+        captures real authenticated traffic, FRIDAY reasons over it with ZERO requests (no crawl, no fuzz).
+        Extracts JWTs (+ runs jwt_analyze on each), an object-ID map, GraphQL operations, and owner-scoped
+        candidates with a suggested single-request manual test. Analyzing your OWN traffic. Authorized only."""
+        from core import hunt_mode as _hm
+        r = _hm.analyze(har)
+        if not r.get("success"):
+            return r
+        d = r["data"]
+        # enrich: run the deterministic JWT analyzer on each captured token
+        jwt_findings = []
+        for tok in d.get("jwts", [])[:5]:
+            try:
+                jf = self.jwt_analyze(tok).get("data", {}).get("findings", [])
+                jwt_findings += jf
+            except Exception:
+                continue
+        d["jwt_findings"] = jwt_findings
+        return {"success": True, "message": r["message"], "data": d}
+
     def idor_check(self, url: str, owner: str = "userA", attacker: str = "userB") -> dict:
         """BOLA/IDOR oracle (B3): fetch an owner-specific resource as the OWNER, then as the
         ATTACKER (same URL + id-swapped variants), with an ANON control. Flags when the attacker

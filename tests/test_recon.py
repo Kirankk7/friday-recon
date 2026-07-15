@@ -303,6 +303,37 @@ def test_route_inventory_ultron(monkeypatch):
     assert d["summary"]["by_source"].get("openapi", 0) >= 1
     assert any("management/users/all" in u for u in d["urls"])
 
+
+_HUNT_HAR = {"log": {"entries": [
+    {"request": {"method": "POST", "url": "https://t/graphql",
+                 "headers": [{"name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhIn0.sig"}],
+                 "postData": {"text": '{"operationName":"GetOrder","variables":{"orderId":"ord-11112222-3333-4444-5555-666677778888"},"query":"query GetOrder($orderId:ID!){order(id:$orderId){total}}"}'}}},
+    {"request": {"method": "GET", "url": "https://t/api/v1/address?addressId=90210", "headers": []}},
+    {"request": {"method": "GET", "url": "https://t/api/v1/health", "headers": []}},
+]}}
+
+def test_hunt_mode_core():
+    from core import hunt_mode as hm
+    r = hm.analyze(_HUNT_HAR)
+    assert r.get("success"), r.get("message")
+    d = r["data"]
+    assert "GetOrder" in d["graphql_ops"]
+    assert any("eyJhbGci" in j for j in d["jwts"])
+    labels = [c["label"] for c in d["candidates"]]
+    assert any("GetOrder" in l for l in labels)
+    assert any("address" in c["url"] for c in d["candidates"])
+    assert not any("health" in c["url"] for c in d["candidates"])
+    top = d["candidates"][0]
+    assert "orderId" in top["id_keys"] or "addressId" in top["id_keys"]
+    assert "account B" in top["suggested_test"]
+
+def test_hunt_mode_ultron():
+    r = _ult.ultron_agent.hunt_mode(_HUNT_HAR)
+    assert r.get("success"), r.get("message")
+    d = r["data"]
+    assert "jwt_findings" in d
+    assert any(f.get("template", "").startswith("jwt") for f in d["jwt_findings"])
+
 def test_oast_cmdi_xxe(monkeypatch):
     import urllib.request, urllib.parse, re
     class _R:
