@@ -2514,13 +2514,15 @@ Report:"""
 
     def bug_bounty(self, target: str, validate: bool = True, force: bool = False,
                    cookie: str = "", owner: str = "", attacker: str = "", discover: bool = False,
-                   spec: str = "") -> dict:
+                   spec: str = "", har: str = "") -> dict:
         """Full bug-bounty hunt: recon pipeline -> parse findings -> CVE/exploit
         lookup -> (validate) -> structured PoC report. Authorized targets only.
         cookie carries a logged-in session so the crawl + injection probe cover
         authenticated surface (most real targets), not just the public pages.
         spec (opt): an OpenAPI/swagger URL or file path — feeds the API routes a passive crawl
-        can't see into the authz oracles (Stage 2.6). Auto-discovered if the target publishes one."""
+        can't see into the authz oracles (Stage 2.6). Auto-discovered if the target publishes one.
+        har (opt): a browser HAR export — every request the browser made, unified into the route
+        inventory alongside crawl + spec so the oracles see the whole surface, not just <a href> links."""
         if not target:
             return {"success": False, "message": "Target missing. Usage: 'bug bounty example.com'", "data": {}}
 
@@ -2623,8 +2625,21 @@ Report:"""
             except Exception as _se:
                 print(f"[ULTRON] spec-ingest skipped: {_se}")
             if _owner and _attacker and sm.headers_for(_owner) and sm.headers_for(_attacker):
+                # Unified route inventory: fan in crawl + OpenAPI spec (+ HAR) into ONE deduped store,
+                # then hand its URLs to the oracles. Widens what a passive crawl can see (fleet battery
+                # lesson: detection is strong once it has URLs; the surface is the bottleneck).
+                from core import route_inventory as _ri
+                _inv = _ri.RouteInventory()
+                _inv.add_many(list(pdata.get("urls", [])), source="crawl")
+                _inv.add_many(_spec_urls, source="openapi")
+                if har:
+                    for _rec in _ri.from_har(har):
+                        _inv.add(_rec.get("url", ""), method=_rec.get("method", "GET"),
+                                 source="har", content_type=_rec.get("content_type", ""))
+                if _spec_urls or har:
+                    print(f"[ULTRON] Route inventory: {_inv.summary()}")
                 # id-bearing URLs only (mutate_url returns variants iff a swappable id exists)
-                _pool = list(dict.fromkeys(list(pdata.get("urls", [])) + _spec_urls))
+                _pool = _inv.urls()
                 _cands = [u for u in _pool if rm.mutate_url(u)][:25]
                 print(f"[ULTRON] Stage 2.6: IDOR oracle on {len(_cands)} id-bearing URL(s) "
                       f"({_owner} vs {_attacker})")
@@ -2634,14 +2649,15 @@ Report:"""
                         findings += _r.get("data", {}).get("findings", [])
                     except Exception:
                         continue
-                # Stage 2.6b: BFLA / function-level authz over the spec routes (static admin/management
-                # paths need no ids). Wires the auth_matrix keystone into the automated pipeline.
-                if _spec_urls:
+                # Stage 2.6b: BFLA / function-level authz over the inventory's routes (spec + any id-bearing
+                # crawl/HAR routes). Static admin/management paths need no ids. Wires auth_matrix into the pipeline.
+                _am_urls = list(dict.fromkeys(_spec_urls + _inv.id_bearing()))[:40]
+                if _am_urls:
                     try:
-                        _am = self.auth_matrix(_spec_urls[:40], owner=_owner, attacker=_attacker)
+                        _am = self.auth_matrix(_am_urls, owner=_owner, attacker=_attacker)
                         _amf = _am.get("data", {}).get("findings", [])
                         findings += _amf
-                        print(f"[ULTRON] Stage 2.6b: auth_matrix over {min(len(_spec_urls), 40)} spec "
+                        print(f"[ULTRON] Stage 2.6b: auth_matrix over {len(_am_urls)} inventory "
                               f"route(s) -> {len(_amf)} authz finding(s).")
                     except Exception as _ae:
                         print(f"[ULTRON] auth_matrix skipped: {_ae}")
@@ -3664,6 +3680,28 @@ Report:"""
         return {"success": True,
                 "message": f"Spec {src or '(provided)'}: {len(urls)} route URL(s), {len(pool)} id(s) harvested.",
                 "data": {"urls": urls, "spec_url": src, "harvested_ids": pool}}
+
+    def route_inventory(self, target: str, spec_src: str = "", har: str = "",
+                        owner: str = "", crawled: list = None) -> dict:
+        """Unified route inventory — merge every discovery SOURCE into one deduped store, then hand its
+        URLs to the oracles. The fleet battery proved detection is strong once it has URLs; the bottleneck
+        is SEEING the surface. Sources fan in (crawl + OpenAPI spec + HAR export + more), the same route from
+        3 sources = 1 entry with merged params + provenance. Deterministic aggregation, no new detection.
+        Authorized targets only."""
+        from core import route_inventory as _ri
+        inv = _ri.RouteInventory()
+        inv.add_many(list(crawled or []), source="crawl")
+        try:
+            _sr = self.spec_ingest(target, spec_src=spec_src, owner=owner)
+            inv.add_many(_sr.get("data", {}).get("urls", []), source="openapi")
+        except Exception:
+            pass
+        if har:
+            for _rec in _ri.from_har(har):
+                inv.add(_rec.get("url", ""), method=_rec.get("method", "GET"),
+                        source="har", content_type=_rec.get("content_type", ""))
+        return {"success": True, "message": f"Route inventory: {inv.summary()}",
+                "data": {"urls": inv.urls(), "id_bearing": inv.id_bearing(), "summary": inv.summary()}}
 
     def idor_check(self, url: str, owner: str = "userA", attacker: str = "userB") -> dict:
         """BOLA/IDOR oracle (B3): fetch an owner-specific resource as the OWNER, then as the

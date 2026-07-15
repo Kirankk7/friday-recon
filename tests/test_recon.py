@@ -261,6 +261,48 @@ def test_spec_ingest_ultron(monkeypatch):
     assert "http://t/api/management/users/all" in urls
     assert "http://t/api/vehicle/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/location" in urls
 
+
+def test_route_inventory_core():
+    # core.route_inventory: dedupe across sources, merge params+provenance, id-bearing, HAR
+    import json, tempfile, os
+    from core import route_inventory as ri
+    inv = ri.RouteInventory()
+    inv.add("http://t/api/users?id=1", source="crawl")
+    inv.add("http://t/api/users", params=["page"], source="openapi")
+    inv.add("http://t/api/orders/42", source="crawl")
+    inv.add("http://t/api/vehicle/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/location", source="har")
+    assert inv.summary()["total"] == 3
+    users = [r for r in inv.routes() if r["path"] == "/api/users"][0]
+    assert users["params"] == {"id", "page"}
+    assert users["sources"] == {"crawl", "openapi"}
+    idb = inv.id_bearing()
+    assert any("orders/42" in u for u in idb)
+    assert any("vehicle/aaaa" in u for u in idb)
+    har = {"log": {"entries": [{"request": {"url": "http://t/api/pay", "method": "POST",
+            "headers": [{"name": "Content-Type", "value": "application/json"}]}}]}}
+    fd, path = tempfile.mkstemp(suffix=".har"); os.close(fd)
+    open(path, "w", encoding="utf-8").write(json.dumps(har))
+    recs = ri.from_har(path); os.unlink(path)
+    assert recs and recs[0]["url"] == "http://t/api/pay" and recs[0]["method"] == "POST"
+
+def test_route_inventory_ultron(monkeypatch):
+    import json
+    from core import session_manager as sm
+    sm.clear(); sm.set_session("userA", cookie="u=1", role="user")
+    def _get(url, timeout=8, headers=None, allow_redirects=True):
+        if url.endswith("/openapi.json"):
+            return _FakeResp(json.dumps(_FAKE_SPEC), 200)
+        if url.endswith("/api/users"):
+            return _FakeResp(json.dumps({"users": [{"uuid": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"}]}), 200)
+        return _FakeResp("not found", 404)
+    _patch_http(monkeypatch, _get)
+    res = _ult.ultron_agent.route_inventory("t", owner="userA", crawled=["http://t/app/page?q=1"])
+    sm.clear()
+    d = res["data"]
+    assert d["summary"]["by_source"].get("crawl", 0) >= 1
+    assert d["summary"]["by_source"].get("openapi", 0) >= 1
+    assert any("management/users/all" in u for u in d["urls"])
+
 def test_oast_cmdi_xxe(monkeypatch):
     import urllib.request, urllib.parse, re
     class _R:
