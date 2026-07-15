@@ -471,7 +471,7 @@ def _expected_access(path: str):
     every expectation is tagged with confidence so an unexpected 2xx is a "possible auth issue" (medium),
     not a hard claim, unless a guest reaches an admin path (high). Deterministic, no LLM."""
     p = (path or "").lower()
-    if re.search(r"/(admin|internal|manage|backoffice|superuser|console|sysadmin|_?debug|actuator)(/|$|\?)", p):
+    if re.search(r"/(admin|administrator|internal|manage|management|mgmt|mechanic|merchant|backoffice|superuser|console|sysadmin|staff|moderator|_?debug|actuator|root)(/|$|\?)", p):
         return ("admin", "high", "admin/management/debug path segment")
     if re.search(r"/(me|profile|account|settings|my|dashboard)(/|$|\?)", p):
         return ("self", "medium", "self-scoped path segment")
