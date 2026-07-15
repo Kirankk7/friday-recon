@@ -334,6 +334,41 @@ def test_hunt_mode_ultron():
     assert "jwt_findings" in d
     assert any(f.get("template", "").startswith("jwt") for f in d["jwt_findings"])
 
+
+_GQL_INTRO = {"data": {"__schema": {
+    "queryType": {"fields": [
+        {"name": "paste", "args": [{"name": "id", "type": {"kind": "SCALAR", "name": "Int"}}]},
+        {"name": "search", "args": [{"name": "keyword", "type": {"kind": "SCALAR", "name": "String"}}]},
+        {"name": "systemHealth", "args": []},
+    ]},
+    "mutationType": {"fields": [{"name": "login", "args": [{"name": "username", "type": {"name": "String"}}]}]},
+}}}
+
+def test_graphql_core():
+    from core import graphql as G
+    sch = G.parse_schema(_GQL_INTRO)
+    assert sch
+    assert ("paste", "id", "Int") in G.single_id_queries(sch)
+    assert ("search", "keyword") in G.string_args(sch)
+    assert G.build_query("paste", "id", "1") == "{paste(id:1){__typename}}"
+    assert 'keyword:"x\'"' in G.build_query("search", "keyword", "x'")
+
+def test_graphql_check_ultron(monkeypatch):
+    import json
+    def _fake(method, url, json_body=None, timeout=8, headers=None, data=None):
+        q = (json_body or {}).get("query", "")
+        if "__schema" in q:
+            return _FakeResp(json.dumps(_GQL_INTRO), 200)
+        if "search(" in q:
+            return _FakeResp('...near "x": syntax error at or near unterminated quoted string', 200)
+        return _FakeResp('{"data":{"__typename":"Query"}}', 200)
+    monkeypatch.setattr(_ult, "_http_write", _fake)
+    r = _ult.ultron_agent.graphql_check("http://t/graphql")
+    tmpls = [f["template"] for f in r["data"]["findings"]]
+    assert "graphql-introspection" in tmpls
+    assert "graphql-injection-sqli" in tmpls
+    assert r["data"]["schema"]
+
 def test_oast_cmdi_xxe(monkeypatch):
     import urllib.request, urllib.parse, re
     class _R:

@@ -3725,6 +3725,97 @@ Report:"""
         d["jwt_findings"] = jwt_findings
         return {"success": True, "message": r["message"], "data": d}
 
+    def graphql_check(self, url: str, owner: str = "", attacker: str = "") -> dict:
+        """GraphQL probe — teach the oracles to speak POST-body GraphQL (the DVGA + real-MediaMarkt gap:
+        the REST-shaped probes can't mutate a GraphQL query body). Introspection-disclosure check + schema
+        enumeration (GraphQL route inventory) + string-arg injection (reuses the SQL/NoSQL error signatures)
+        + GraphQL-BOLA candidate (single-id query returning data to a non-owner while anon is denied). BOLA
+        findings are CANDIDATES -> confirm manually with your two accounts. Authorized targets only."""
+        from core import graphql as G, session_manager as sm
+        import json as _json
+        ho = sm.headers_for(owner) if owner else None
+        ha = sm.headers_for(attacker) if attacker else None
+        findings = []
+
+        def _q(query, headers=None):
+            try:
+                return _http_write("POST", url, json_body={"query": query}, headers=headers or {})
+            except Exception:
+                return None
+
+        def _text(r):
+            return (getattr(r, "text", "") or "")
+
+        # 1) Introspection disclosure + schema enumeration (the GraphQL route inventory)
+        schema = None
+        r = _q(G.INTROSPECTION_QUERY, ho)
+        if r is not None:
+            try:
+                schema = G.parse_schema(r.json())
+            except Exception:
+                try:
+                    schema = G.parse_schema(_json.loads(_text(r)))
+                except Exception:
+                    schema = None
+        if schema:
+            nq, nm = len(schema["queries"]), len(schema["mutations"])
+            findings.append({
+                "template": "graphql-introspection", "severity": "low", "url": url, "cve": None,
+                "validated": True,
+                "evidence": (f"GraphQL introspection is ENABLED — the full schema is disclosed ({nq} queries, "
+                             f"{nm} mutations), mapping every operation + argument to an attacker. Often "
+                             f"informational alone; the enumerated ops feed the BOLA/injection tests below."),
+                "repro": [f"POST {url}  body {{\"query\":\"{{__schema{{queryType{{name}}}}}}\"}}",
+                          "Observe the schema returned in data.__schema (introspection not disabled)."],
+            })
+
+        # 2) String-arg injection (reuse SQL/NoSQL error signatures over GraphQL POST bodies)
+        for op, arg in (G.string_args(schema)[:8] if schema else []):
+            q = G.build_query(op, arg, "x'\"()", selection="__typename")
+            body = _text(_q(q, ho))
+            m = _SQL_ERROR_SIGNS.search(body)
+            n = _NOSQL_ERROR_SIGNS.search(body)
+            if m or n:
+                cls = "sqli" if m else "nosqli"
+                findings.append({
+                    "template": f"graphql-injection-{cls}", "severity": "high", "url": url, "cve": None,
+                    "validated": True,
+                    "evidence": (f"Injecting a quote into GraphQL arg '{arg}' of op '{op}' surfaced a "
+                                 f"{cls.upper()} error signature '{(m or n).group(0)}' — the argument reaches a "
+                                 f"backend {'SQL' if m else 'NoSQL'} query unsanitized."),
+                    "repro": [f"POST {url}  op {op}({arg}: \"x'\\\"()\")",
+                              f"Observe the {cls} error in the response body."],
+                })
+
+        # 3) GraphQL-BOLA candidate: single-id query returning data to a non-owner while anon is denied
+        if schema and ho and ha:
+            for op, idarg, _at in G.single_id_queries(schema)[:8]:
+                q = G.build_query(op, idarg, "1", selection="__typename")
+                ra, rn = _q(q, ha), _q(q, None)
+                a_body, n_body = _text(ra), _text(rn)
+                a_ok = ('"data"' in a_body and '"errors"' not in a_body and "null" not in a_body[:40])
+                n_denied = (rn is None) or ('"errors"' in n_body) or (getattr(rn, "status_code", 0) in (401, 403))
+                if a_ok and n_denied:
+                    findings.append({
+                        "template": "graphql-bola", "severity": "high", "url": url, "cve": None,
+                        "validated": False,
+                        "evidence": (f"GraphQL op '{op}({idarg}:...)' returned an object to an authenticated "
+                                     f"non-owner while anon was denied — possible broken object-level auth (BOLA). "
+                                     f"CANDIDATE: confirm the returned object belongs to another user by requesting "
+                                     f"an id you don't own, with your two accounts."),
+                        "repro": [f"As attacker: POST {url}  op {op}({idarg}:<owner's id>)",
+                                  "Confirm the response is the owner's object (not yours), and anon is denied."],
+                    })
+
+        if not schema:
+            return {"success": True,
+                    "message": f"No GraphQL schema at {url} (introspection disabled or not a GraphQL endpoint).",
+                    "data": {"schema": None, "findings": findings}}
+        return {"success": True,
+                "message": (f"GraphQL: {len(schema['queries'])}Q/{len(schema['mutations'])}M enumerated, "
+                            f"{len(findings)} finding(s)."),
+                "data": {"schema": schema, "findings": findings}}
+
     def idor_check(self, url: str, owner: str = "userA", attacker: str = "userB") -> dict:
         """BOLA/IDOR oracle (B3): fetch an owner-specific resource as the OWNER, then as the
         ATTACKER (same URL + id-swapped variants), with an ANON control. Flags when the attacker
