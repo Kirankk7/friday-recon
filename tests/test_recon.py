@@ -215,6 +215,52 @@ def test_auth_matrix_r6(monkeypatch):
     r2 = _ult.ultron_agent.auth_matrix(["http://t/products"])           # default 'user' -> no flag
     assert not any(f["template"] == "missing-authentication" for f in r2["data"]["findings"])
 
+
+_FAKE_SPEC = {
+    "openapi": "3.0.0",
+    "paths": {
+        "/api/users": {"get": {}},
+        "/api/vehicle/{vehicleId}/location": {"get": {}},
+        "/api/management/users/all": {"get": {}},
+    },
+}
+
+def test_openapi_core():
+    # core.openapi: routes + to_urls (param fill) + harvest (uuid + int), deterministic, no network
+    import json as _json
+    from core import openapi as oa
+    paths = [p for _m, p in oa.routes(_FAKE_SPEC)]
+    assert "/api/vehicle/{vehicleId}/location" in paths
+    urls = oa.to_urls("http://t", _FAKE_SPEC, id_pool=["abc-123"])
+    assert "http://t/api/vehicle/abc-123/location" in urls
+    assert "http://t/api/management/users/all" in urls
+    def _hg(url, timeout=8, headers=None):
+        if url.endswith("/api/users"):
+            return _FakeResp(_json.dumps({"users": [{"id": 7, "uuid": "11111111-2222-3333-4444-555555555555"}]}), 200)
+        return _FakeResp("{}", 200)
+    ids = oa.harvest_ids("http://t", _FAKE_SPEC, _hg)
+    assert "11111111-2222-3333-4444-555555555555" in ids
+    assert "7" in ids
+
+def test_spec_ingest_ultron(monkeypatch):
+    # ultron.spec_ingest: discover at /openapi.json, harvest owner ids, substitute into templated routes
+    import json as _json
+    from core import session_manager as sm
+    sm.clear(); sm.set_session("userA", cookie="u=1", role="user")
+    def _get(url, timeout=8, headers=None, allow_redirects=True):
+        if url.endswith("/openapi.json"):
+            return _FakeResp(_json.dumps(_FAKE_SPEC), 200)
+        if url.endswith("/api/users"):
+            return _FakeResp(_json.dumps({"users": [{"uuid": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"}]}), 200)
+        return _FakeResp("not found", 404)
+    _patch_http(monkeypatch, _get)
+    res = _ult.ultron_agent.spec_ingest("t", owner="userA")
+    sm.clear()
+    assert res.get("success"), res.get("message")
+    urls = res["data"]["urls"]
+    assert "http://t/api/management/users/all" in urls
+    assert "http://t/api/vehicle/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/location" in urls
+
 def test_oast_cmdi_xxe(monkeypatch):
     import urllib.request, urllib.parse, re
     class _R:

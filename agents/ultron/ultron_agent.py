@@ -2513,11 +2513,14 @@ Report:"""
         return report.impact_line(f)
 
     def bug_bounty(self, target: str, validate: bool = True, force: bool = False,
-                   cookie: str = "", owner: str = "", attacker: str = "", discover: bool = False) -> dict:
+                   cookie: str = "", owner: str = "", attacker: str = "", discover: bool = False,
+                   spec: str = "") -> dict:
         """Full bug-bounty hunt: recon pipeline -> parse findings -> CVE/exploit
         lookup -> (validate) -> structured PoC report. Authorized targets only.
         cookie carries a logged-in session so the crawl + injection probe cover
-        authenticated surface (most real targets), not just the public pages."""
+        authenticated surface (most real targets), not just the public pages.
+        spec (opt): an OpenAPI/swagger URL or file path — feeds the API routes a passive crawl
+        can't see into the authz oracles (Stage 2.6). Auto-discovered if the target publishes one."""
         if not target:
             return {"success": False, "message": "Target missing. Usage: 'bug bounty example.com'", "data": {}}
 
@@ -2607,9 +2610,22 @@ Report:"""
             _names = list(sm.list_sessions().keys())
             _owner = owner or (_names[0] if len(_names) >= 2 else "")
             _attacker = attacker or next((n for n in _names if n != _owner), "")
+            # Stage 2.6a: spec-ingest — a passive crawl is blind to XHR API routes (SPA/API targets),
+            # so on those the idor pool below is empty. The OpenAPI spec declares the real routes; feed
+            # them into the SAME oracles. Degrades silently when no spec is published.
+            _spec_urls = []
+            try:
+                _sr = self.spec_ingest(target, spec_src=spec, owner=(_owner or (_names[0] if _names else "")))
+                _spec_urls = _sr.get("data", {}).get("urls", [])
+                if _spec_urls:
+                    print(f"[ULTRON] Stage 2.6a: OpenAPI spec -> {len(_spec_urls)} API route(s) "
+                          f"(surface a passive crawl can't see).")
+            except Exception as _se:
+                print(f"[ULTRON] spec-ingest skipped: {_se}")
             if _owner and _attacker and sm.headers_for(_owner) and sm.headers_for(_attacker):
                 # id-bearing URLs only (mutate_url returns variants iff a swappable id exists)
-                _cands = [u for u in dict.fromkeys(pdata.get("urls", [])) if rm.mutate_url(u)][:15]
+                _pool = list(dict.fromkeys(list(pdata.get("urls", [])) + _spec_urls))
+                _cands = [u for u in _pool if rm.mutate_url(u)][:25]
                 print(f"[ULTRON] Stage 2.6: IDOR oracle on {len(_cands)} id-bearing URL(s) "
                       f"({_owner} vs {_attacker})")
                 for _u in _cands:
@@ -2618,6 +2634,25 @@ Report:"""
                         findings += _r.get("data", {}).get("findings", [])
                     except Exception:
                         continue
+                # Stage 2.6b: BFLA / function-level authz over the spec routes (static admin/management
+                # paths need no ids). Wires the auth_matrix keystone into the automated pipeline.
+                if _spec_urls:
+                    try:
+                        _am = self.auth_matrix(_spec_urls[:40], owner=_owner, attacker=_attacker)
+                        _amf = _am.get("data", {}).get("findings", [])
+                        findings += _amf
+                        print(f"[ULTRON] Stage 2.6b: auth_matrix over {min(len(_spec_urls), 40)} spec "
+                              f"route(s) -> {len(_amf)} authz finding(s).")
+                    except Exception as _ae:
+                        print(f"[ULTRON] auth_matrix skipped: {_ae}")
+                # dedupe authz findings (idor loop + auth_matrix can both flag the same object route)
+                _seen_fp, _deduped = set(), []
+                for _f in findings:
+                    _k = (_f.get("template"), _f.get("url"))
+                    if _k in _seen_fp:
+                        continue
+                    _seen_fp.add(_k); _deduped.append(_f)
+                findings = _deduped
             elif _names:
                 print(f"[ULTRON] Stage 2.6 skipped: need 2 sessions for IDOR (have {len(_names)}). "
                       f"Set them: session set userA cookie ..")
@@ -3595,6 +3630,40 @@ Report:"""
                     "data": {"status": r.status_code, "len": len(r.text or ""), "body": (r.text or "")[:400]}}
         except Exception as e:
             return {"success": False, "message": f"replay failed: {str(e)[:80]}", "data": {}}
+
+    def spec_ingest(self, target: str, spec_src: str = "", owner: str = "") -> dict:
+        """Turn an OpenAPI/Swagger spec into concrete route URLs — the surface a passive crawl can't see.
+        A `<a href>` crawl is blind to XHR API routes (SPA/API targets), so idor_check/auth_matrix get an
+        empty candidate list; the spec DECLARES every route. If `spec_src` is given (URL or file path) it is
+        loaded directly, else common spec locations are probed. When `owner` names a session, real object ids
+        are harvested from that principal's collection endpoints so id-bearing routes ({id}) are reachable
+        (a placeholder just 404s). Read-only, deterministic — this is plumbing, not a new detector. The URLs
+        feed the EXISTING oracles. Authorized targets only."""
+        from core import openapi as _oa, session_manager as sm
+        base = target if re.match(r"^https?://", target) else "http://" + target
+        base = base.rstrip("/")
+        src, spec = spec_src, None
+        if spec_src:
+            try:
+                if re.match(r"^https?://", spec_src):
+                    spec = json.loads(_http_get(spec_src).text or "")
+                else:
+                    with open(spec_src, "r", encoding="utf-8") as fh:
+                        spec = json.load(fh)
+            except Exception as e:
+                return {"success": False, "message": f"spec load failed: {str(e)[:80]}", "data": {"urls": []}}
+        else:
+            src, spec = _oa.discover(base, _http_get)
+        if not spec:
+            return {"success": False,
+                    "message": f"No OpenAPI/swagger spec found at {base} (tried common paths).",
+                    "data": {"urls": []}}
+        ho = sm.headers_for(owner) if owner else None
+        pool = _oa.harvest_ids(base, spec, _http_get, ho) if ho else []
+        urls = _oa.to_urls(base, spec, id_pool=pool)
+        return {"success": True,
+                "message": f"Spec {src or '(provided)'}: {len(urls)} route URL(s), {len(pool)} id(s) harvested.",
+                "data": {"urls": urls, "spec_url": src, "harvested_ids": pool}}
 
     def idor_check(self, url: str, owner: str = "userA", attacker: str = "userB") -> dict:
         """BOLA/IDOR oracle (B3): fetch an owner-specific resource as the OWNER, then as the
