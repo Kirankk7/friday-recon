@@ -16,10 +16,16 @@ _JWT = re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]*")  
 _UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.I)
 # an "id-ish" JSON/param key: orderId, addressId, customer_id, invoiceNumber, shipmentRef, cartId...
 _IDKEY = re.compile(r"(?:^|[_.])((?:[a-z][a-z0-9]*?)?(?:id|uuid|number|reference|ref|token|key|hash))$", re.I)
-# owner-scoped surface hints (path segment or GraphQL op name) — these carry other users' data
+# owner-scoped surface hints (path segment or GraphQL op name) — these carry other users' data.
+# `dashboard` added after hunt #1: GetDashboardDataV3 was the real BOLA candidate and went unranked.
 _OWNER_HINT = re.compile(
-    r"order|address|invoice|shipment|payment|account|profile|customer|user|wishlist|cart|basket|"
-    r"reservation|booking|ticket|voucher|coupon|loyalty|return|refund|billing|subscription|me\b", re.I)
+    r"order|address|invoice|shipment|payment|account|profile|customer|user|wishlist|cart|basket|dashboard|"
+    r"reservation|booking|ticket|voucher|coupon|loyalty|return|refund|billing|subscription|receipt|me\b", re.I)
+# USER-scoped id keys = a real ownership boundary (swap across accounts = BOLA).
+_USER_ID = re.compile(r"party|customer|order|address|invoice|account|\buser|loyalty|payment|receipt|"
+                      r"booking|reservation|ticket|subscription|cart|basket|wishlistitem", re.I)
+# PUBLIC/global id keys = catalog data anyone can query (NOT an ownership boundary). hunt #1: productId FPs.
+_PUBLIC_ID = re.compile(r"product|brand|manufactur|category|\bsku|gtin|article|model|group|store|\bplp|\bpdp", re.I)
 
 
 def _load(har_or_path):
@@ -80,12 +86,23 @@ def analyze(har_or_path, cap=400):
 
         # id-ish values: query params (REST) + request body (REST/GraphQL)
         found = []
-        for k, v in parse_qsl(p.query, keep_blank_values=True):
+        _qs = dict(parse_qsl(p.query, keep_blank_values=True))
+        for k, v in _qs.items():
             if _IDKEY.search(k) and (_UUID.search(v) or (v.isdigit() and len(v) >= 3)):
                 found.append((k, v))
         body = ((req.get("postData", {}) or {}).get("text", "")) or ""
-        is_gql = path.rstrip("/").endswith("graphql") or ('"query"' in body and ("operationName" in body or "variables" in body))
-        op = ""
+        # GraphQL via GET: operationName + variables live in the URL QUERY STRING (not the body) —
+        # e.g. MediaMarkt /api/v1/graphql?operationName=GetAddresses&variables={...}. hunt #1 taught this:
+        # 49/51 ops were GET-in-URL and were invisible when we only parsed the body.
+        _url_op = _qs.get("operationName", "")
+        if "variables" in _qs:
+            try:
+                found += _id_pairs(json.loads(_qs["variables"]))
+            except Exception:
+                pass
+        is_gql = (path.rstrip("/").endswith("graphql") or bool(_url_op)
+                  or ('"query"' in body and ("operationName" in body or "variables" in body)))
+        op = _url_op
         if body:
             try:
                 parsed = json.loads(body)
@@ -113,7 +130,24 @@ def analyze(har_or_path, cap=400):
             seen_ep.add(key)
             idkeys = sorted({k for k, _ in found})
             sample = {k: v for k, v in found}
-            score = 90 if (_OWNER_HINT.search(op or path) and any("id" in k.lower() or "uuid" in k.lower() for k in idkeys)) else 70
+            # user-scoped vs public ID: a partyId/orderId/addressId is a real ownership boundary; a
+            # productId/brandId is public catalog data (NOT BOLA). Score on that + enumerability; drop
+            # pure-public ops. hunt #1 taught both (productId FPs + the missed partyId dashboard op).
+            user_ids = [k for k in idkeys if _USER_ID.search(k)]
+            public_ids = [k for k in idkeys if _PUBLIC_ID.search(k)]
+            strong_op = bool(re.search(r"dashboard|account|profile|order|address|invoice|payment|loyalty|customer|\buser|receipt", (op or "") + " " + path, re.I))
+            enumerable = any(str(v).isdigit() and len(str(v)) >= 6 for _, v in found)
+            score = 50
+            if user_ids:
+                score += 40
+            if strong_op:
+                score += 20
+            if enumerable:
+                score += 15   # numeric sequential id = enumerable = higher severity if it confirms
+            if public_ids and not user_ids:
+                score -= 60   # product/brand/catalog-only = public, not an ownership boundary
+            if score <= 0:
+                continue      # drop pure-public catalog ops (kills the productId FP class)
             cand.append({
                 "label": label, "url": f"{host}{path}", "method": method,
                 "is_graphql": bool(is_gql and op), "operation": op,
