@@ -530,6 +530,9 @@ def test_v12_engine_end_to_end(tmp_path):
              "_probe_stored_xss": lambda *a, **k: [],
              "collect_evidence": lambda *a, **k: {"success": True, "data": {}},
              "find_exploits": lambda *a, **k: {"success": True, "data": {"pocs": [{"url": "p"}], "total": 1}, "message": "p"},
+             # stub the Stage-4 validate re-probe — it shells out to the httpx binary (absent in CI),
+             # which would overwrite the stubbed validated:True with False → flaky "reproduced on target".
+             "httpx_probe": lambda *a, **k: {"success": True, "message": " ".join(urls), "data": {"raw": " ".join(urls)}},
              "save_report": _save}
     orig = {n: getattr(U, n) for n in stubs}
     for n, fn in stubs.items():
