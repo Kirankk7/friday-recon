@@ -22,6 +22,8 @@ traffic      ingest a Burp Suite (Community) HTTP-history export → endpoint/pa
                 + auto-tagging (JWT / GraphQL / API / auth-boundary / tech)
 memory       per-target profiles (scans, findings, endpoints, typed intel, evidence) across hunts
 evidence     re-probe a finding → capture confirmed request/response evidence for the report
+authz        auth-matrix (endpoint × principal → BFLA + BOLA) · idor/bola oracle · jwt analyzer
+confirm      OAST out-of-band (ssrf/cmdi/xxe) · headless-browser XSS execution · CORS · subdomain takeover
 secrets      GitHub org/user repo hunt → flag secret-prone files → TruffleHog deep-scan
 methodology  RAG over 87 real bug-bounty / OSINT methodology notes (local TF-IDF, cited)
 fleet        180+ HackingTool index, gated to ~25 runnable (capability allowlist, offensive blocked)
@@ -61,6 +63,13 @@ python cli.py write-bola https://t.com/api/user/1 --field email --owner userA --
 python cli.py session-set bob <cookie>      # register a principal for authz testing
 python cli.py sessions                      # list authz-test sessions
 python cli.py evidence https://t.com/find   # re-probe a finding → capture evidence
+python cli.py auth-matrix example.com       # Auth Matrix: endpoint × principal → BFLA + BOLA (set sessions first)
+python cli.py jwt <token>                    # analyze a JWT — alg:none / weak-HS / jku-SSRF / kid / exp / claims (no cracking)
+python cli.py cors https://t.com            # CORS misconfig probe (Origin reflection + credentials) over target + crawled URLs
+python cli.py takeover sub.example.com      # subdomain-takeover check (dangling-service fingerprints; host, comma-list, or @file)
+python cli.py secrets example.com           # scan crawled JS for hard-coded keys + probe exposed files (.git/.env/.DS_Store)
+python cli.py xss-confirm https://t.com/r   # confirm reflected XSS by EXECUTION in a headless browser (candidate→confirmed)
+python cli.py oast https://t.com --kind ssrf  # confirm a BLIND class via an out-of-band callback (ssrf|cmdi|xxe)
 
 # F4 execution timeline (immutable run record → replay → submission package)
 python cli.py timeline [<run_id>]           # list recent runs, or render one run's stage timeline
@@ -72,6 +81,8 @@ python cli.py cve log4j                     # NVD CVE lookup
 python cli.py threat-intel 1.2.3.4          # IOC reputation across feeds (IP/domain/URL/hash)
 python cli.py kb "how do I test for subdomain takeover"   # methodology KB (cited)
 python cli.py playbook "ssrf"               # recall attack techniques (proven + KB + PortSwigger)
+python cli.py ingest-writeup <url>          # learn a public bug-bounty writeup → playbook (local)
+python cli.py ingest-feed <url>             # ingest a writeup-index page → learn each article
 
 # data / memory
 python cli.py burp export.xml               # ingest Burp Community "Save items" XML
