@@ -46,7 +46,11 @@ PATTERNS = [
 
 
 def _git(*args) -> str:
-    return subprocess.run(["git", *args], capture_output=True, text=True).stdout
+    """Decode UTF-8 explicitly. Under the Windows locale (cp1252) an em-dash in a diff raised
+    UnicodeDecodeError and killed the scan — fail-closed kept it safe, but a guard that dies on
+    ordinary prose is a guard that gets bypassed."""
+    out = subprocess.run(["git", *args], capture_output=True).stdout
+    return out.decode("utf-8", "replace") if out else ""
 
 
 def _base_ref(explicit: str = "") -> str:
