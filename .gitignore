@@ -20,3 +20,4 @@ deep_hunt.py
 # ─── Private KB notes (personal-use-only licensed; local mirror of JARVIS KB) ───
 agents/ultron/knowledge/notes_private/
 data/security_kb_private.json
+.hunt_targets
