@@ -425,6 +425,36 @@ def test_sweep_ultron_wrapper():
     assert r["data"]["testable"]
 
 
+def test_ingest_inventory_and_profile():
+    """One entry point for any capture -> inventory (kills the scratch-parser reflex)."""
+    from core import sweep as sw
+    d = sw.ingest(_SWEEP_HAR)
+    assert d.get("success"), d.get("message")
+    d = d["data"]
+    assert d["endpoints"]
+    assert "path:drive" in d["object_ids"], list(d["object_ids"])
+    assert d["third_party_excluded"] >= 1
+    assert not any("matomo" in e for e in d["endpoints"])
+
+
+def test_ruled_out_negative_knowledge(tmp_path, monkeypatch):
+    """What came back CLEAN is the reusable half of a hunt - and the cheapest dupe guard."""
+    from core import target_profiles as tp
+    host = "regtest-ruledout.example"
+    tp.record_ruled_out(host, "BOLA/IDOR", "ids re-checked against the session", scope="systemic")
+    tp.record_ruled_out(host, "SQLi", "quote returns a clean empty result", "/search")
+    r = tp.ruled_out(host)
+    assert r["success"] and len(r["data"]["ruled_out"]) == 2
+    assert "SYSTEMIC" in r["message"]
+    # dedup by (class, endpoint); a systemic verdict must not be downgraded
+    tp.record_ruled_out(host, "BOLA/IDOR", "re-verified on a second account", scope="endpoint")
+    rows = tp.ruled_out(host)["data"]["ruled_out"]
+    assert len(rows) == 2
+    bola = [x for x in rows if x["class"] == "BOLA/IDOR"][0]
+    assert bola["scope"] == "systemic" and "second account" in bola["evidence"]
+    assert tp.record_ruled_out(host, "", "x")["success"] is False
+
+
 _GQL_INTRO = {"data": {"__schema": {
     "queryType": {"fields": [
         {"name": "paste", "args": [{"name": "id", "type": {"kind": "SCALAR", "name": "Int"}}]},

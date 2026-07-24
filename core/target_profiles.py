@@ -184,6 +184,63 @@ def record_hypothesis(host: str, endpoint: str, vuln_class: str, rationale: str 
     return {"success": True, "message": f"Hypothesis: {vuln_class} @ {endpoint} ({status})"}
 
 
+def record_ruled_out(host: str, vuln_class: str, evidence: str, endpoint: str = "",
+                     scope: str = "endpoint") -> dict:
+    """Negative knowledge — what was tested and came back CLEAN, with the proof.
+
+    A hunt's most reusable output is usually what it ELIMINATED: four consecutive hunts produced
+    roughly thirty ruled-out results ("account ids are checked by a shared validator", "search is
+    parameterized", "conversations are account-scoped") and every one of them evaporated, so the next
+    session had no way to know that ground was already dead. Findings were recorded; the far more
+    common negative was not.
+
+    Two things this buys. Re-testing dead ground stops being free, and "is this program worth more
+    time?" becomes answerable from data instead of memory. It also guards the wallet now that filing a
+    report costs credits: a class marked ruled-out with evidence is a class you do not re-file on.
+
+    scope: 'endpoint' (this path only) or 'systemic' (holds target-wide — the strongest kind, e.g. a
+    shared authorization validator). Dedup+update by (class, endpoint); systemic never downgrades.
+    """
+    host = _norm(host)
+    if not host or not vuln_class or not evidence:
+        return {"success": False, "message": "Need host, vuln class, and the evidence that killed it."}
+    with _lock:
+        data = _load()
+        p = _get(data, host)
+        rows = p.setdefault("ruled_out", [])
+        for r in rows:
+            if r.get("class") == vuln_class and r.get("endpoint", "") == endpoint:
+                r["evidence"] = evidence
+                if r.get("scope") != "systemic":      # a systemic verdict outranks an endpoint one
+                    r["scope"] = scope
+                r["ts"] = _now()
+                _save(data)
+                return {"success": True,
+                        "message": f"Updated ruled-out: {vuln_class}{' @ ' + endpoint if endpoint else ''}"}
+        rows.append({"class": vuln_class, "endpoint": endpoint, "evidence": evidence,
+                     "scope": scope, "ts": _now()})
+        p["ruled_out"] = rows[-200:]
+        _save(data)
+    where = f" @ {endpoint}" if endpoint else ""
+    return {"success": True, "message": f"Ruled out on {host}: {vuln_class}{where} ({scope}) — {evidence[:70]}"}
+
+
+def ruled_out(host: str) -> dict:
+    """What is already known-dead on this target — read this BEFORE re-testing anything."""
+    host = _norm(host)
+    rows = (_load().get(host) or {}).get("ruled_out", [])
+    if not rows:
+        return {"success": True, "message": f"Nothing recorded as ruled-out on {host} yet.", "data": {"ruled_out": []}}
+    sysm = [r for r in rows if r.get("scope") == "systemic"]
+    lines = [f"{host}: {len(rows)} class(es) already ruled out"
+             + (f" ({len(sysm)} systemic — those hold target-wide)" if sysm else "") + ":"]
+    for r in sorted(rows, key=lambda x: (x.get("scope") != "systemic", x.get("class", ""))):
+        tag = "SYSTEMIC" if r.get("scope") == "systemic" else "endpoint"
+        lines.append(f"  [{tag}] {r['class']}{' @ ' + r['endpoint'] if r.get('endpoint') else ''}"
+                     f"\n      {r['evidence'][:150]}")
+    return {"success": True, "message": "\n".join(lines), "data": {"ruled_out": rows}}
+
+
 def summary(host: str) -> dict:
     host = _norm(host)
     data = _load()
@@ -207,6 +264,14 @@ def summary(host: str) -> dict:
             lines.append(f"{label}: " + ", ".join(vals[:6]) + (" …" if len(vals) > 6 else ""))
     if p.get("evidence"):
         lines.append(f"Evidence captured: {len(p['evidence'])} item(s).")
+    ro = p.get("ruled_out", [])
+    if ro:
+        sysm = [r for r in ro if r.get("scope") == "systemic"]
+        lines.append(f"Ruled out: {len(ro)} class(es) already dead here"
+                     + (f", {len(sysm)} SYSTEMIC" if sysm else "") + " — see `ruled_out` before re-testing.")
+        for r in sorted(ro, key=lambda x: x.get("scope") != "systemic")[:5]:
+            lines.append(f"  [{'SYSTEMIC' if r.get('scope') == 'systemic' else 'endpoint'}] "
+                         f"{r['class']}: {r['evidence'][:90]}")
     hyps = [h for h in p.get("hypotheses", []) if h.get("status") not in ("failed",)]
     if hyps:
         lines.append("Hypotheses (exploitability memory):")

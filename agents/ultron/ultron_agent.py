@@ -3725,6 +3725,24 @@ Report:"""
         d["jwt_findings"] = jwt_findings
         return {"success": True, "message": r["message"], "data": d}
 
+    def ingest(self, capture: str) -> dict:
+        """Any capture (HAR or Burp export) -> endpoint/param/object-id inventory + target profile.
+        One entry point so no hunt needs a throwaway parser again. Offline; sends nothing."""
+        from core import sweep as _sw
+        return _sw.ingest(capture)
+
+    def ruled_out(self, target: str) -> dict:
+        """What is already known-dead on a target — read BEFORE re-testing, and before re-filing."""
+        from core import target_profiles as _tp
+        return _tp.ruled_out(target)
+
+    def rule_out(self, target: str, vuln_class: str, evidence: str, endpoint: str = "",
+                 scope: str = "endpoint") -> dict:
+        """Bank a CLEAN result. The negative is the reusable half of a hunt: it stops the next session
+        re-walking dead ground, and it is the cheapest guard against re-filing a duplicate."""
+        from core import target_profiles as _tp
+        return _tp.record_ruled_out(target, vuln_class, evidence, endpoint, scope)
+
     def sweep(self, capture: str) -> dict:
         """Coverage Sweep — a captured HAR/Burp export -> the mandatory per-class matrix (tested-or-N/A).
 
@@ -5051,6 +5069,20 @@ Report:"""
 
             elif action == "ingest_burp":
                 return self.ingest_burp(parameters.get("path", target))
+
+            elif action == "sweep":
+                return self.sweep(parameters.get("capture", target))
+
+            elif action == "ingest":
+                return self.ingest(parameters.get("capture", target))
+
+            elif action == "ruled_out":
+                return self.ruled_out(parameters.get("target", target))
+
+            elif action == "rule_out":
+                return self.rule_out(parameters.get("target", target),
+                                     parameters.get("vuln_class", ""), parameters.get("evidence", ""),
+                                     parameters.get("endpoint", ""), parameters.get("scope", "endpoint"))
 
             elif action == "github_hunt":
                 from core import github_hunt

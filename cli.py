@@ -75,6 +75,8 @@ def print_banner() -> None:
         ("recon <t>",      "full pipeline: nmap → subfinder → httpx → nuclei → katana"),
         ("bugbounty <t>",  "hunt → validation gate → platform-ready PoC report"),
         ("sweep <capture>","HAR/Burp export → per-class tested-or-N/A matrix (offline)"),
+        ("ingest <capture>","HAR/Burp export → endpoint/param/id inventory → target profile"),
+        ("ruled-out <host>","what is already known-dead here (skip it, don't re-file it)"),
         ("idor <url>",     "cross-account IDOR/BOLA oracle (owner vs attacker)"),
         ("graphql <url>",  "introspection + privileged-mutation hunt"),
         ("discover <t>",   "content discovery — brute-force hidden paths/dirs"),
@@ -120,6 +122,9 @@ def main() -> int:
     sp_bb = add("bugbounty", "Full bug-bounty workflow → validated PoC report", "target"); sp_bb.add_argument("--force", action="store_true"); sp_bb.add_argument("--discover", action="store_true", help="also brute hidden paths (ffuf/gobuster) — slower/noisier")
     sp_bb.add_argument("--owner", default=""); sp_bb.add_argument("--attacker", default="")   # IDOR oracle principals (else auto from 2 sessions)
     add("burp", "Ingest a Burp HTTP-history XML export → endpoint inventory", "path")
+    add("ingest", "Any capture (HAR or Burp XML) → endpoint/param/object-id inventory + target profile",
+        "capture")
+    add("ruled-out", "What is already known-dead on a target (read before re-testing or re-filing)", "host")
     sp_sw = add("sweep", "Coverage sweep: a captured HAR/Burp export → per-class tested-or-N/A matrix "
                          "(offline, sends nothing)", "capture")
     sp_sw.add_argument("--detail", action="store_true", help="also print each class's targets + manual test")
@@ -205,6 +210,8 @@ def main() -> int:
                     print(f"    · {t}")
                 print(f"    -> {v['test']}")
         return 0 if r.get("success") else 1
+    if c == "ingest":      return _run("ingest", capture=a.capture)
+    if c == "ruled-out":   return _run("ruled_out", target=a.host)
     if c == "kb":          return _run("kb_methodology", query=a.query)
     if c == "github-hunt": return _run("github_hunt", org=a.org)
     if c == "profile":     return _run("target_profile", target=a.host)

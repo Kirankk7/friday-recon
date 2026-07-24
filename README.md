@@ -19,6 +19,8 @@ recon        nmap (scan diffing) · subfinder · httpx · katana · nuclei
 intel        NVD CVE search · VirusTotal · CVE → asset correlation
 bug bounty   full pipeline → 7-question validation gate (kills noise) → platform-ready PoC report
 sweep        a captured HAR / Burp export → per-class tested-or-N/A matrix (offline, sends nothing)
+ingest       any capture → endpoint/param/object-id inventory → target profile (one entry point)
+ruled-out    what is already known-dead on a target (skip it, don't re-file it)
 traffic      ingest a Burp Suite (Community) HTTP-history export → endpoint/param inventory
                 + auto-tagging (JWT / GraphQL / API / auth-boundary / tech)
 memory       per-target profiles (scans, findings, endpoints, typed intel, evidence) across hunts
@@ -91,6 +93,11 @@ python cli.py sweep capture.har [--detail]  # coverage sweep: every attack class
                                             #   YOU decide and send the check (see docs/PRODUCT_BOUNDARIES).
                                             #   Offline analysis of traffic you already captured; sends nothing,
                                             #   so it works on programs that forbid automated scanning.
+python cli.py ingest capture.har            # any capture (HAR or Burp XML) → endpoints/params/object-ids
+                                            #   → written to the target profile. One entry point, so a
+                                            #   hunt never needs a throwaway parser.
+python cli.py ruled-out example.com         # what already came back CLEAN here, with the evidence —
+                                            #   read before re-testing, and before re-filing a report
 python cli.py burp export.xml               # ingest Burp Community "Save items" XML
 python cli.py github-hunt acme              # org repo secret hunt
 python cli.py profile example.com           # what we know about a target, across hunts

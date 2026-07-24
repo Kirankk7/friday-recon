@@ -479,6 +479,70 @@ def _context(recs) -> dict:
             "writes": sorted({r["method"] for r in recs if r["method"] in _WRITE})}
 
 
+def ingest(src) -> dict:
+    """Any capture (HAR path/dict or Burp XML path) -> one inventory, written to the target profile.
+
+    The last reason to reach for a scratch parser mid-hunt: `hunt_mode` reads HAR, `burp_ingest` reads
+    Burp XML, and neither answers "what is this target, and what did I capture?" in one call. Four
+    throwaway parsers got written during real hunts because of that gap, and none of what they learned
+    reached the engine. This is the one entry point: format auto-detected, hosts/endpoints/params/ids
+    and the auth mechanism extracted, profile updated. Offline; sends nothing.
+    """
+    try:
+        recs = _records(src)
+    except FileNotFoundError:
+        return {"success": False, "message": "I couldn't find that capture file, boss.", "data": {}}
+    except Exception as e:
+        return {"success": False, "message": f"That capture didn't parse: {str(e)[:80]}", "data": {}}
+    if not recs:
+        return {"success": False, "message": "No HTTP requests in that capture.", "data": {}}
+
+    total = len(recs)
+    recs = [r for r in recs
+            if not _THIRD_PARTY.search(r["host"]) and not _TELEMETRY_PATH.search(r["path"])]
+    if not recs:
+        return {"success": False, "message": f"All {total} request(s) were third-party telemetry.", "data": {}}
+
+    ctx = _context(recs)
+    endpoints, params, ids, gql = set(), set(), {}, set()
+    for r in recs:
+        endpoints.add(f"{r['method']} {r['host']}{r['path']}")
+        params.update(_params(r).keys())
+        for coll, val in _path_ids(r["path"]):
+            ids.setdefault(f"path:{coll}", set()).add(val)
+        for k, v in _params(r).items():
+            if _IDKEY.search(k.split(".")[-1]):
+                ids.setdefault(k, set()).add(str(v)[:60])
+        if r["is_gql"] and r["gql_op"]:
+            gql.add(r["gql_op"])
+
+    data = {"hosts": ctx["hosts"], "auth": ctx["auth"], "api": ctx["api"],
+            "endpoints": sorted(endpoints), "params": sorted(params),
+            "object_ids": {k: sorted(v)[:10] for k, v in sorted(ids.items())},
+            "graphql_ops": sorted(gql), "request_count": len(recs),
+            "third_party_excluded": total - len(recs)}
+    try:
+        from core import target_profiles as _tp
+        for host in ctx["hosts"][:5]:
+            own = [e.split(" ", 1)[1] for e in endpoints if f" {host}" in e]
+            _tp.record_endpoints(host, own[:200])
+            _tp.record_scan(host, "ingest",
+                            f"{len(own)} endpoint(s), {len(data['params'])} param(s), "
+                            f"{len(data['object_ids'])} id key(s), auth={ctx['auth']}, api={ctx['api']}")
+    except Exception:
+        pass
+
+    return {"success": True,
+            "message": (f"Ingested {len(recs)} request(s): {len(endpoints)} endpoint(s) across "
+                        f"{len(ctx['hosts'])} host(s), {len(params)} param(s), {len(ids)} object-id key(s)"
+                        + (f", {len(gql)} GraphQL op(s)" if gql else "")
+                        + f". auth={ctx['auth']} api={ctx['api']}"
+                        + (f" ({data['third_party_excluded']} telemetry request(s) excluded)"
+                           if data["third_party_excluded"] else "")
+                        + ". Profile updated; run `sweep` on the same capture for the class matrix."),
+            "data": data}
+
+
 def sweep(src, micro: bool = True) -> dict:
     """Capture (HAR path/dict or Burp XML path) -> the coverage matrix. Offline; sends nothing."""
     try:
