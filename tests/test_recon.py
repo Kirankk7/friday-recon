@@ -335,6 +335,96 @@ def test_hunt_mode_ultron():
     assert any(f.get("template", "").startswith("jwt") for f in d["jwt_findings"])
 
 
+# --- Coverage Sweep (capture -> per-class matrix) ---------------------------------------------------
+# The fixture encodes the two real defects the module was caught on while dogfooding it against captures
+# from live hunts: path-borne ids were invisible (BOLA read N/A on a capture whose whole hunt WAS path-id
+# swapping), and self-hosted analytics beacons faked SSRF surface.
+def _swp(method, url, body="", ctype="", resp="", resp_hdrs=None):
+    return {"request": {"method": method, "url": url,
+                        "headers": ([{"name": "Content-Type", "value": ctype}] if ctype else []),
+                        "postData": {"text": body}},
+            "response": {"status": 200,
+                         "headers": [{"name": k, "value": v} for k, v in (resp_hdrs or {}).items()],
+                         "content": {"text": resp}}}
+
+
+_SWEEP_HAR = {"log": {"entries": [
+    _swp("GET", "https://t/api/v1/drive/3585113/files/6"),            # path-id BOLA
+    _swp("GET", "https://t/api/v1/products/123"),                     # public catalog -> NOT BOLA
+    _swp("POST", "https://t/api/v1/import", '{"url":"https://evil.test/x"}', "application/json"),
+    _swp("GET", "https://t/search?search=needle99", resp="<p>no result for needle99</p>",
+         resp_hdrs={"Content-Type": "text/html"}),
+    _swp("POST", "https://t/upload", "--b\r\n", "multipart/form-data; boundary=b"),
+    _swp("POST", "https://t/login", "user=a&pass=b"),
+    _swp("POST", "https://t/matomo.php?idsite=36&send_image=0&url=https%3A%2F%2Ft%2Fa"),
+    _swp("POST", "https://t.tgt.com/v1/i", '{"traits":{"firstName":"a"},"userId":"1"}',
+         "application/json"),
+    _swp("GET", "https://t/api/v1/flags?appName=studio&per_page=50&is_hosted_page=0"),
+]}}
+
+def test_sweep_generic_words_are_not_path_sinks():
+    """Bare name/page matched operationName/appName/per_page and buried real sinks under ~100 FPs."""
+    from core import sweep as sw
+    cls = sw.sweep(_SWEEP_HAR)["data"]["classes"]["10. cmd/SSTI/XXE/path"]
+    params = {t.get("param", "") for t in cls["targets"]}
+    assert not {"appName", "per_page", "is_hosted_page"} & params, params
+    assert "traits.firstName" not in params, "Segment ingest not excluded"
+
+
+def test_sweep_matrix_is_tested_or_na():
+    from core import sweep as sw
+    r = sw.sweep(_SWEEP_HAR)
+    assert r.get("success"), r.get("message")
+    cls = r["data"]["classes"]
+    assert len(cls) == 10
+    for name, v in cls.items():
+        assert v["status"] in ("TESTABLE", "N/A"), name
+        assert v["signal"], f"{name} gave no reason"
+        if v["status"] == "TESTABLE":
+            assert v["test"], f"{name} suggested no manual test"
+
+
+def test_sweep_path_ids_and_public_catalog():
+    from core import sweep as sw
+    bola = sw.sweep(_SWEEP_HAR)["data"]["classes"]["1. BOLA / IDOR"]
+    assert bola["status"] == "TESTABLE"
+    wheres = " ".join(t["where"] for t in bola["targets"])
+    assert "drive" in wheres, wheres          # path-borne id must rank
+    assert "products" not in wheres, wheres   # public catalog must not
+
+
+def test_sweep_telemetry_does_not_fake_ssrf():
+    from core import sweep as sw
+    d = sw.sweep(_SWEEP_HAR)["data"]
+    ssrf = d["classes"]["5. SSRF / XSPA"]
+    params = {t["param"] for t in ssrf["targets"]}
+    assert "url" in params, params                                    # the real JSON sink
+    assert not any("send_image" in p or "idsite" in p for p in params)  # the beacon must not
+    assert d["third_party_excluded"] >= 1
+
+
+def test_sweep_burp_format_and_determinism(tmp_path):
+    import base64
+    from core import sweep as sw
+    raw = "GET /api/v1/drive/42/files/7 HTTP/1.1\r\nHost: t\r\nCookie: s=1\r\n\r\n"
+    p = tmp_path / "burp.xml"
+    p.write_text('<?xml version="1.0"?><items><item><url>https://t/api/v1/drive/42/files/7</url>'
+                 '<method>GET</method><status>200</status>'
+                 f'<request base64="true">{base64.b64encode(raw.encode()).decode()}</request>'
+                 '<response base64="true"></response></item></items>', encoding="utf-8")
+    r = sw.sweep(str(p))
+    assert r.get("success"), r.get("message")
+    assert r["data"]["context"]["auth"] == "cookie"
+    assert r["data"]["classes"]["1. BOLA / IDOR"]["status"] == "TESTABLE"
+    assert sw.sweep(_SWEEP_HAR)["message"] == sw.sweep(_SWEEP_HAR)["message"]
+
+
+def test_sweep_ultron_wrapper():
+    r = _ult.ultron_agent.sweep(_SWEEP_HAR)
+    assert r.get("success"), r.get("message")
+    assert r["data"]["testable"]
+
+
 _GQL_INTRO = {"data": {"__schema": {
     "queryType": {"fields": [
         {"name": "paste", "args": [{"name": "id", "type": {"kind": "SCALAR", "name": "Int"}}]},

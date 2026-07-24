@@ -74,6 +74,7 @@ def print_banner() -> None:
     rows = [
         ("recon <t>",      "full pipeline: nmap → subfinder → httpx → nuclei → katana"),
         ("bugbounty <t>",  "hunt → validation gate → platform-ready PoC report"),
+        ("sweep <capture>","HAR/Burp export → per-class tested-or-N/A matrix (offline)"),
         ("idor <url>",     "cross-account IDOR/BOLA oracle (owner vs attacker)"),
         ("graphql <url>",  "introspection + privileged-mutation hunt"),
         ("discover <t>",   "content discovery — brute-force hidden paths/dirs"),
@@ -119,6 +120,9 @@ def main() -> int:
     sp_bb = add("bugbounty", "Full bug-bounty workflow → validated PoC report", "target"); sp_bb.add_argument("--force", action="store_true"); sp_bb.add_argument("--discover", action="store_true", help="also brute hidden paths (ffuf/gobuster) — slower/noisier")
     sp_bb.add_argument("--owner", default=""); sp_bb.add_argument("--attacker", default="")   # IDOR oracle principals (else auto from 2 sessions)
     add("burp", "Ingest a Burp HTTP-history XML export → endpoint inventory", "path")
+    sp_sw = add("sweep", "Coverage sweep: a captured HAR/Burp export → per-class tested-or-N/A matrix "
+                         "(offline, sends nothing)", "capture")
+    sp_sw.add_argument("--detail", action="store_true", help="also print each class's targets + manual test")
     add("scope-setup", "Parse a pasted program policy (text file) → set in/out scope + rules", "policyfile")
     add("kb", "Ask the bug-bounty methodology knowledge base", "query")
     add("github-hunt", "Enumerate an org/user's repos + flag secret-prone files", "org")
@@ -187,6 +191,20 @@ def main() -> int:
         except OSError as e:
             print(f"Can't read policy file '{a.policyfile}': {e}"); return 1
         return _run("setup_scope", text=_txt)
+    if c == "sweep":
+        from agents.ultron.ultron_agent import ultron_agent as U
+        r = U.sweep(a.capture)
+        print(r.get("message", ""))
+        if a.detail and r.get("success"):
+            d = r["data"]
+            for name, v in list(d["classes"].items()) + list(d["micro"].items()):
+                if v["status"] != "TESTABLE":
+                    continue
+                print(f"\n  {name}  ({v['count']} target(s)) — {v['signal']}")
+                for t in v["targets"]:
+                    print(f"    · {t}")
+                print(f"    -> {v['test']}")
+        return 0 if r.get("success") else 1
     if c == "kb":          return _run("kb_methodology", query=a.query)
     if c == "github-hunt": return _run("github_hunt", org=a.org)
     if c == "profile":     return _run("target_profile", target=a.host)

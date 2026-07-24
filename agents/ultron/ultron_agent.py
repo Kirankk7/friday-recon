@@ -3725,6 +3725,36 @@ Report:"""
         d["jwt_findings"] = jwt_findings
         return {"success": True, "message": r["message"], "data": d}
 
+    def sweep(self, capture: str) -> dict:
+        """Coverage Sweep — a captured HAR/Burp export -> the mandatory per-class matrix (tested-or-N/A).
+
+        Every hunt is supposed to cover ALL attack classes; done by hand it drifts back to whatever got
+        ranked first. This makes the checklist an artifact: each class returns either TESTABLE (with the
+        endpoints and the one manual request that verifies it) or N/A with the reason no surface exists.
+        Offline like hunt_mode — nothing is sent, so it stays usable on the scanner-forbidding programs
+        where the rest of the pipeline can't go. Authorized targets only."""
+        from core import sweep as _sw
+        r = _sw.sweep(capture)
+        if not r.get("success"):
+            return r
+        d = r["data"]
+        for tok in d.get("context", {}).get("jwts", [])[:5]:
+            try:
+                d.setdefault("jwt_findings", []).extend(
+                    self.jwt_analyze(tok).get("data", {}).get("findings", []))
+            except Exception:
+                continue
+        # bank it: hunts kept producing zero engine-side artifacts, so nothing accumulated across sessions
+        try:
+            from core import target_profiles as _tp
+            for host in d.get("context", {}).get("hosts", [])[:3]:
+                _tp.record_scan(host, "sweep",
+                                f"{len(d.get('testable', []))}/10 classes with surface: "
+                                f"{', '.join(d.get('testable', []))}")
+        except Exception:
+            pass
+        return {"success": True, "message": r["message"], "data": d}
+
     def graphql_check(self, url: str, owner: str = "", attacker: str = "") -> dict:
         """GraphQL probe — teach the oracles to speak POST-body GraphQL (the DVGA + real-MediaMarkt gap:
         the REST-shaped probes can't mutate a GraphQL query body). Introspection-disclosure check + schema
